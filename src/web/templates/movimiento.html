@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar' if mov.id else 'Nuevo' }} movimiento · FinanzApp{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>{{ 'Editar movimiento' if mov.id else 'Nuevo movimiento' }}</h1></div>
+
+<form class="tarjeta" method="post" action="/movimiento" id="formulario">
+  <input type="hidden" name="id" value="{{ mov.id or '' }}">
+  <div class="segmentado">
+    <input type="radio" name="tipo" value="gasto" id="tipo-gasto" {{ 'checked' if mov.tipo != 'ingreso' }}>
+    <label for="tipo-gasto">Gasto</label>
+    <input type="radio" name="tipo" value="ingreso" id="tipo-ingreso" {{ 'checked' if mov.tipo == 'ingreso' }}>
+    <label for="tipo-ingreso">Ingreso</label>
+  </div>
+
+  <label for="monto">Monto</label>
+  <input id="monto" name="monto" class="monto-grande" inputmode="decimal" placeholder="$ 0,00"
+         value="{{ mov.monto }}" required {{ 'autofocus' if not mov.id }}>
+
+  <label>Categoría</label>
+  <div class="fichas">
+    {% for c in categorias %}
+    <span data-ingreso="{{ 1 if c.es_ingreso else 0 }}" style="display:contents">
+      <input type="radio" name="categoria_id" value="{{ c.id }}" id="cat-{{ c.id }}"
+             {{ 'checked' if c.id == mov.categoria_id }}>
+      <label for="cat-{{ c.id }}" style="--color: {{ c.color }}"><span class="emoji">{{ c.icono }}</span>{{ c.nombre }}</label>
+    </span>
+    {% endfor %}
+  </div>
+
+  <div class="fila-botones">
+    <div>
+      <label for="cuenta">Cuenta</label>
+      <select id="cuenta" name="cuenta_id">
+        {% for c in cuentas %}
+        <option value="{{ c.id }}" {{ 'selected' if c.id == mov.cuenta_id }}>{{ c.nombre }}</option>
+        {% else %}<option value="">(sin cuentas)</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="fecha">Fecha</label>
+      <input id="fecha" name="fecha" type="date" value="{{ mov.fecha }}" required>
+    </div>
+  </div>
+
+  <label for="descripcion">Descripción (opcional)</label>
+  <input id="descripcion" name="descripcion" maxlength="200" placeholder="Ej. Comida con amigos"
+         value="{{ mov.descripcion }}">
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <button class="boton">Guardar</button>
+</form>
+
+{% if mov.id %}
+<form method="post" action="/movimiento/{{ mov.id }}/eliminar"
+      onsubmit="return confirm('¿Eliminar este movimiento? Esto no se puede deshacer.')">
+  <button class="boton peligro" style="margin-top:0">🗑 Eliminar movimiento</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Solo se muestran las categorías del tipo elegido (gasto o ingreso)
+  const formulario = document.getElementById("formulario");
+  function mostrarCategorias() {
+    const ingreso = formulario.tipo.value === "ingreso" ? "1" : "0";
+    let visibles = [];
+    formulario.querySelectorAll(".fichas > span").forEach(grupo => {
+      const ver = grupo.dataset.ingreso === ingreso;
+      grupo.querySelectorAll("input, label").forEach(e => e.hidden = !ver);
+      if (ver) visibles.push(grupo.querySelector("input"));
+      else grupo.querySelector("input").checked = false;
+    });
+    if (visibles.length && !visibles.some(i => i.checked)) visibles[0].checked = true;
+  }
+  formulario.querySelectorAll("[name=tipo]").forEach(r => r.addEventListener("change", mostrarCategorias));
+  mostrarCategorias();
+</script>
+{% endblock %}

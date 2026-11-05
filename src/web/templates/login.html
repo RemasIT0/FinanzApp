@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Crear cuenta' if modo == 'registro' else 'Entrar' }} · FinanzApp{% endblock %}
+{% block cuerpo %}
+<main class="entrada">
+  <div class="tarjeta">
+    <div class="logo"><span>◈</span> FinanzApp</div>
+    {% if modo == 'registro' %}
+      <h1>Crea tu cuenta</h1>
+      <p class="secundario">Solo toma un minuto</p>
+      <form method="post" action="/registro">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" name="nombre" value="{{ nombre }}" autocomplete="name" required>
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" value="{{ email }}" autocomplete="email" inputmode="email" required>
+        <label for="password">Contraseña (mínimo 6 caracteres)</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="6" required>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <button class="boton">Crear cuenta</button>
+      </form>
+      <p class="centrado secundario">¿Ya tienes cuenta? <a class="enlace" href="/login">Inicia sesión</a></p>
+    {% else %}
+      <h1>Bienvenido de nuevo</h1>
+      <p class="secundario">Inicia sesión para ver tu resumen</p>
+      <form method="post" action="/login">
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" value="{{ email }}" autocomplete="email" inputmode="email" required>
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required
+               {{ 'autofocus' if email }}>
+        <p style="text-align:right;margin:8px 0 0"><a class="enlace" href="/recuperar">¿Olvidaste tu contraseña?</a></p>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <button class="boton">Entrar</button>
+      </form>
+      <p class="centrado secundario">¿No tienes cuenta? <a class="enlace" href="/registro">Crea una</a></p>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

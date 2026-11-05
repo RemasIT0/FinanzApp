@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "_piezas.html" as piezas %}
+{% block titulo %}Reportes · FinanzApp{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Reportes</h1>
+  <form method="get" action="/reportes" style="flex:0 0 52%">
+    <select name="mes" onchange="this.form.submit()" aria-label="Mes">
+      {% for m in meses %}<option value="{{ m.valor }}" {{ 'selected' if m.elegido }}>{{ m.nombre }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<section class="tarjeta">
+  <h2>Gastos por categoría</h2>
+  {{ piezas.dona(dona, gastado | dinero) }}
+</section>
+
+<section class="tarjeta top">
+  <h2>Top 5 categorías con más gasto</h2>
+  {% if top %}
+  <ul>
+    {% for c in top %}
+    <li>
+      <div class="linea"><span>{{ c.icono }} {{ c.nombre }}</span><b>{{ c.total | dinero }}</b></div>
+      <div class="riel"><div class="relleno" style="width: {{ c.ancho }}%; background: {{ c.color }}"></div></div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="vacio">Sin gastos en este mes</p>{% endif %}
+</section>
+
+<section class="tarjeta">
+  <h2>Proyección de fin de mes</h2>
+  {% if proyeccion %}
+    <p class="secundario" style="margin:0">Si sigues gastando a este ritmo, terminarás el mes con:</p>
+    <div class="numero-grande">{{ proyeccion.proyeccion | dinero }}</div>
+    <p class="secundario pequeno" style="margin:0">en gastos</p>
+    <div class="dato"><div class="titulo">Gasto promedio por día</div><div class="valor">{{ proyeccion.promedio_diario | dinero }}</div></div>
+    <div class="dato"><div class="titulo">Llevas gastado</div><div class="valor">{{ gastado | dinero }} · faltan {{ proyeccion.dias_restantes }} días</div></div>
+    {% if proyeccion.sobrante is not none %}
+    <div class="dato"><div class="titulo">{{ 'Te sobraría' if proyeccion.sobrante >= 0 else 'Te faltaría' }}</div>
+      <div class="valor {{ 'ingreso' if proyeccion.sobrante >= 0 else 'gasto' }}">{{ proyeccion.sobrante | abs | dinero }}</div></div>
+    {% endif %}
+  {% else %}
+    <p class="secundario" style="margin:0">Este mes ya terminó.</p>
+    <div class="dato"><div class="titulo">Gasto total</div><div class="valor gasto">{{ gastado | dinero }}</div></div>
+    <div class="dato"><div class="titulo">Ingresos</div><div class="valor ingreso">{{ ingresos | dinero }}</div></div>
+    <div class="dato"><div class="titulo">Balance final</div><div class="valor">{{ (ingresos - gastado) | dinero }}</div></div>
+  {% endif %}
+</section>
+
+<section class="tarjeta lineas">
+  <h2>Evolución de los últimos 12 meses</h2>
+  <svg viewBox="0 0 {{ lineas.ancho }} {{ lineas.alto }}" preserveAspectRatio="none" role="img"
+       aria-label="Ingresos, gastos y ahorro de los últimos 12 meses">
+    {% for s in lineas.series %}
+    <polyline points="{{ s.puntos }}" fill="none" stroke="{{ s.color }}" stroke-width="2.5"
+              stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    {% endfor %}
+  </svg>
+  <div class="ejes"><span>{{ etiquetas[0] }}</span><span>{{ etiquetas[6] }}</span><span>{{ etiquetas[-1] }}</span></div>
+  <div class="claves">
+    {% for s in lineas.series %}<span style="--c: {{ s.color }}">{{ s.nombre }}</span>{% endfor %}
+  </div>
+</section>
+
+<section class="tarjeta">
+  <h2>Comparativa de los últimos 6 meses</h2>
+  {{ piezas.barras(comparativa) }}
+</section>
+{% endblock %}

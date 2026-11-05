@@ -1,0 +1,47 @@
+{# Piezas que se repiten en varias pantallas #}
+
+{% macro movimiento(m) %}
+<a class="movimiento" href="/movimiento/{{ m.id }}" style="--color: {{ m.color }}">
+  <span class="icono">{{ m.icono }}</span>
+  <span class="textos">
+    <span class="descripcion" style="display:block">{{ m.descripcion }}</span>
+    <span class="detalle" style="display:block">{{ m.categoria }} · {{ m.cuenta }} · {{ m.fecha.strftime('%d/%m/%Y') }}</span>
+  </span>
+  <span class="monto {{ m.tipo }}">{{ m.con_signo | dinero_signo }}</span>
+</a>
+{% endmacro %}
+
+{% macro dona(datos, centro) %}
+{% if datos.leyenda %}
+<div class="dona-contenedor">
+  <div class="dona" style="background: conic-gradient({{ datos.gradiente }})"
+       role="img" aria-label="Gastos por categoría">
+    <span class="centro">{{ centro }}</span>
+  </div>
+  <ul class="leyenda">
+    {% for c in datos.leyenda[:6] %}
+    <li><span class="punto" style="background: {{ c.color }}"></span>
+        <span class="nombre">{{ c.icono }} {{ c.nombre }}</span>
+        <span class="secundario">{{ '%.0f' % c.porcentaje }}%</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<p class="vacio">Aún no hay gastos este mes</p>
+{% endif %}
+{% endmacro %}
+
+{% macro barras(meses) %}
+<div class="barras">
+  {% for m in meses %}
+  <div class="mes" title="{{ m.etiqueta }}: ingresos {{ m.ingresos | dinero }}, gastos {{ m.gastos | dinero }}">
+    <div class="par">
+      <div class="barra" style="height: {{ m.alto_ingresos }}%; background: var(--ingreso)"></div>
+      <div class="barra" style="height: {{ m.alto_gastos }}%; background: var(--gasto)"></div>
+    </div>
+    <span class="etiqueta">{{ m.etiqueta }}</span>
+  </div>
+  {% endfor %}
+</div>
+<div class="claves"><span style="--c: var(--ingreso)">Ingresos</span><span style="--c: var(--gasto)">Gastos</span></div>
+{% endmacro %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Recuperar contraseña · FinanzApp{% endblock %}
+{% block cuerpo %}
+<main class="entrada">
+  <div class="tarjeta">
+    <div class="logo"><span>◈</span> FinanzApp</div>
+    <h1>Recuperar contraseña</h1>
+
+    {% if paso == 'codigo' %}
+      <p class="secundario">{{ mensaje or "Escribe el código que te mandamos." }}<br>Correo: <b>{{ email }}</b></p>
+      <form method="post" action="/recuperar/cambiar">
+        <label for="codigo">Código de 6 dígitos</label>
+        <input id="codigo" name="codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+               autocomplete="one-time-code" required autofocus>
+        <label for="nueva">Contraseña nueva (mínimo 6 caracteres)</label>
+        <input id="nueva" name="nueva" type="password" autocomplete="new-password" minlength="6" required>
+        <label for="repetir">Repite la contraseña nueva</label>
+        <input id="repetir" name="repetir" type="password" autocomplete="new-password" minlength="6" required>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <button class="boton">Cambiar contraseña</button>
+      </form>
+      <form method="post" action="/recuperar" class="centrado">
+        <input type="hidden" name="email" value="{{ email }}">
+        <button class="enlace">Reenviar código</button> ·
+        <a class="enlace" href="/recuperar">Usar otro correo</a>
+      </form>
+
+    {% elif not disponible %}
+      <p class="secundario">Para mandarte un código, primero hay que configurar el correo de envío de la app.
+        Hazlo en la app de escritorio: en la pantalla de inicio toca «¿Olvidaste tu contraseña?», o entra a
+        <b>Configuración → Datos → Configurar correo de envío</b>.</p>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      <a class="boton secundario" href="/recuperar">Ya lo configuré, reintentar</a>
+
+    {% else %}
+      <p class="secundario">Escribe el correo con el que te registraste y te mandaremos un código de 6 dígitos.</p>
+      <form method="post" action="/recuperar">
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" value="{{ email }}" autocomplete="email" inputmode="email"
+               required autofocus>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <button class="boton">Enviar código</button>
+      </form>
+    {% endif %}
+
+    <p class="centrado"><a class="enlace" href="/login">← Volver a iniciar sesión</a></p>
+  </div>
+</main>
+{% endblock %}

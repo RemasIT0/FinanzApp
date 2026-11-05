@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "_piezas.html" as piezas %}
+{% block titulo %}Historial · FinanzApp{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Historial</h1></div>
+
+<form class="tarjeta filtros" method="get" action="/historial" id="filtros">
+  <input class="completo" name="q" value="{{ filtro.q }}" placeholder="🔍 Buscar descripción…" type="search"
+         aria-label="Buscar">
+  <select name="periodo" aria-label="Periodo">
+    {% for p in periodos %}<option {{ 'selected' if p == filtro.periodo }}>{{ p }}</option>{% endfor %}
+  </select>
+  <select name="tipo" aria-label="Tipo">
+    <option value="">Todos</option>
+    <option value="gasto" {{ 'selected' if filtro.tipo == 'gasto' }}>Gastos</option>
+    <option value="ingreso" {{ 'selected' if filtro.tipo == 'ingreso' }}>Ingresos</option>
+  </select>
+  <select class="completo" name="categoria" aria-label="Categoría">
+    <option value="">Todas las categorías</option>
+    {% for c in categorias %}
+    <option value="{{ c.id }}" {{ 'selected' if c.id == filtro.categoria }}>{{ c.icono }} {{ c.nombre }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<p class="secundario pequeno" style="margin:0 4px">
+  {{ cantidad }} movimientos · <span class="ingreso">Ingresos {{ ingresos | dinero }}</span> ·
+  <span class="gasto">Gastos {{ gastos | dinero }}</span>
+</p>
+
+{% for d in dias %}
+<div class="dia">{{ d.titulo }}</div>
+<div class="tarjeta" style="padding:4px 16px">
+  {% for m in d.movimientos %}{{ piezas.movimiento(m) }}{% endfor %}
+</div>
+{% else %}
+<p class="vacio">No hay movimientos con estos filtros.</p>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Los filtros se aplican solos al cambiarlos (y la búsqueda, al dejar de escribir)
+  const filtros = document.getElementById("filtros");
+  filtros.querySelectorAll("select").forEach(s => s.addEventListener("change", () => filtros.submit()));
+  let espera;
+  filtros.q.addEventListener("input", () => { clearTimeout(espera); espera = setTimeout(() => filtros.submit(), 600); });
+</script>
+{% endblock %}

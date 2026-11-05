@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1c1f" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eef0f7" media="(prefers-color-scheme: light)">
+  <!-- Permite "Agregar a pantalla de inicio" y abrirla como si fuera app -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="FinanzApp">
+  <title>{% block titulo %}FinanzApp{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='estilo.css') }}">
+</head>
+<body>
+  {% block cuerpo %}
+  <main class="pagina">
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <nav class="navegacion">
+    <a href="/" class="{{ 'activo' if seccion == 'inicio' }}"><span class="icono">⌂</span>Inicio</a>
+    <a href="/historial" class="{{ 'activo' if seccion == 'historial' }}"><span class="icono">☰</span>Historial</a>
+    <a href="/movimiento/nuevo" class="mas" aria-label="Nuevo movimiento"><span class="icono">＋</span>Nuevo</a>
+    <a href="/reportes" class="{{ 'activo' if seccion == 'reportes' }}"><span class="icono">◔</span>Reportes</a>
+    <a href="/salir"><span class="icono">⇠</span>Salir</a>
+  </nav>
+  {% endblock %}
+
+  {% if aviso %}<div class="aviso {{ aviso[1] }}" role="status">{{ aviso[0] }}</div>{% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

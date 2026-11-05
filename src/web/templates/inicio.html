@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% import "_piezas.html" as piezas %}
+{% block contenido %}
+<div class="encabezado">
+  <div>
+    <h1>Hola, {{ nombre }} 👋</h1>
+    <p class="secundario" style="margin:4px 0 0">Así van tus finanzas en {{ mes }}</p>
+  </div>
+  <span class="pastilla">{{ fecha }}</span>
+</div>
+
+{% for a in alertas %}
+<div class="alerta {{ 'excedido' if a.excedido }}">
+  ⚠ {{ a.icono }} {{ a.nombre }}:
+  {% if a.excedido %}te pasaste del presupuesto por {{ a.diferencia | dinero }}
+  {% else %}ya usaste el {{ '%.0f' % a.porcentaje }}% ({{ a.diferencia | dinero }} disponibles){% endif %}
+</div>
+{% endfor %}
+
+<section class="resumen">
+  <div class="tarjeta">
+    <div class="titulo">Ingresos del mes <span class="ingreso">↗</span></div>
+    <div class="numero">{{ ingresos | dinero }}</div>
+    <div class="detalle {{ cmp_ingresos.clase or 'secundario' }}">{{ cmp_ingresos.texto }}</div>
+  </div>
+  <div class="tarjeta">
+    <div class="titulo">Gastos del mes <span class="gasto">↘</span></div>
+    <div class="numero">{{ gastos | dinero }}</div>
+    <div class="detalle {{ cmp_gastos.clase or 'secundario' }}">{{ cmp_gastos.texto }}</div>
+  </div>
+  <div class="tarjeta">
+    <div class="titulo">Balance <span style="color:var(--neutro)">⚖</span></div>
+    <div class="numero {{ 'ingreso' if balance >= 0 else 'gasto' }}">{{ balance | dinero }}</div>
+    <div class="detalle secundario">{{ 'Te queda dinero' if balance >= 0 else 'Gastaste más de lo que entró' }}</div>
+  </div>
+  <div class="tarjeta">
+    <div class="titulo">Ahorro del mes <span style="color:var(--ahorro)">★</span></div>
+    <div class="numero">{{ '%.0f' % ahorro }}%</div>
+    <div class="detalle secundario">de tus ingresos</div>
+  </div>
+</section>
+
+<section class="tarjeta">
+  <h2 style="margin:0">⚡ Gasto rápido</h2>
+  <form method="post" action="/rapido">
+    <input name="monto" inputmode="decimal" placeholder="$ Monto" aria-label="Monto" style="margin-top:10px">
+    <div class="rapido-botones">
+      {% for c in rapidas %}
+      <button name="categoria_id" value="{{ c.id }}">{{ c.icono }} {{ c.nombre }}</button>
+      {% endfor %}
+    </div>
+  </form>
+  <p class="pequeno secundario" style="margin:8px 0 0">Escribe el monto y toca una categoría. Se guarda con fecha de hoy.</p>
+</section>
+
+<section class="tarjeta">
+  <h2>Gastos por categoría</h2>
+  {{ piezas.dona(dona, gastos | dinero) }}
+</section>
+
+<section class="tarjeta">
+  <h2>Últimos 6 meses</h2>
+  {{ piezas.barras(meses) }}
+</section>
+
+<section class="tarjeta">
+  <div class="encabezado" style="margin:0">
+    <h2>Últimos movimientos</h2>
+    <a class="enlace" href="/historial">Ver todo →</a>
+  </div>
+  {% for m in ultimos %}{{ piezas.movimiento(m) }}{% else %}
+  <p class="vacio">Todavía no tienes movimientos. Toca ＋ para registrar uno.</p>
+  {% endfor %}
+</section>
+{% endblock %}

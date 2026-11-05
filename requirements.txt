@@ -1,0 +1,17 @@
+customtkinter
+mysql-connector-python
+pandas
+openpyxl
+matplotlib
+Pillow
+tkcalendar
+bcrypt
+python-dateutil
+beautifulsoup4
+lxml
+keyring
+fastapi
+uvicorn
+jinja2
+python-multipart
+itsdangerous

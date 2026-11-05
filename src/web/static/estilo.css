@@ -1,0 +1,308 @@
+/* FinanzApp web: pensado primero para el celular.
+   Mismos colores que la app de escritorio (utils/temas.py).
+   El modo claro/oscuro sigue al del teléfono. */
+
+:root {
+  --fondo: #eef0f7;
+  --fondo2: #ffffff;
+  --acento: #dde3f0;
+  --borde: #d9deea;
+  --entrada: #f6f7fb;
+  --texto: #1a1a2e;
+  --texto2: #5f6577;
+  --destacado: #e94560;
+  --destacado-hover: #c9364f;
+  --gasto: #e94560;
+  --ingreso: #2e9c7c;
+  --neutro: #3498db;
+  --ahorro: #d4b106;
+  --sombra: 0 1px 3px rgba(20, 24, 40, .08);
+  --radio: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #1c1c1f;
+    --fondo2: #26262b;
+    --acento: #34343b;
+    --borde: #3a3a42;
+    --entrada: #2e2e34;
+    --texto: #ffffff;
+    --texto2: #a0a0a0;
+    --ingreso: #4ecca3;
+    --ahorro: #f9d923;
+    --sombra: none;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 15px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+a { color: inherit; text-decoration: none; }
+h1 { font-size: 24px; margin: 0; line-height: 1.2; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+.secundario { color: var(--texto2); }
+.pequeno { font-size: 13px; }
+.gasto { color: var(--gasto); }
+.ingreso { color: var(--ingreso); }
+.buena { color: var(--ingreso); }
+.mala { color: var(--gasto); }
+
+/* ---------- Estructura ---------- */
+.pagina {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+}
+.encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.tarjeta {
+  background: var(--fondo2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--sombra);
+}
+.pastilla {
+  display: inline-block;
+  background: var(--fondo2);
+  border: 1px solid var(--borde);
+  color: var(--texto2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------- Barra de navegación inferior ---------- */
+.navegacion {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  background: var(--fondo2);
+  border-top: 1px solid var(--borde);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+.navegacion a {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: var(--texto2);
+  font-size: 11px;
+  padding: 4px 0;
+  min-height: 48px;
+  justify-content: center;
+}
+.navegacion a .icono { font-size: 20px; line-height: 1; }
+.navegacion a.activo { color: var(--destacado); font-weight: 600; }
+.navegacion a.mas .icono {
+  width: 52px; height: 52px;
+  display: grid; place-items: center;
+  margin-top: -26px;
+  border-radius: 50%;
+  background: var(--destacado);
+  color: #fff;
+  font-size: 28px;
+  box-shadow: 0 4px 14px rgba(233, 69, 96, .45);
+}
+
+/* ---------- Tarjetas de resumen ---------- */
+.resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.resumen .tarjeta { margin: 0; padding: 14px; }
+.resumen .titulo { font-size: 12px; color: var(--texto2); display: flex; justify-content: space-between; }
+.resumen .numero { font-size: 21px; font-weight: 700; margin: 4px 0 2px; overflow-wrap: anywhere; }
+.resumen .detalle { font-size: 12px; }
+
+/* ---------- Alertas ---------- */
+.alerta {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  color: #fff;
+  background: #c58b00;
+  font-size: 14px;
+}
+.alerta.excedido { background: var(--destacado); }
+
+/* ---------- Formularios ---------- */
+label { display: block; font-size: 13px; color: var(--texto2); margin: 14px 0 6px; }
+input, select {
+  width: 100%;
+  font: inherit;
+  font-size: 16px; /* 16px evita que iPhone haga zoom al escribir */
+  color: var(--texto);
+  background: var(--entrada);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-height: 48px;
+  outline: none;
+}
+input:focus, select:focus { border-color: var(--destacado); }
+.monto-grande { font-size: 30px; font-weight: 700; text-align: center; }
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font: inherit; font-weight: 600;
+  background: var(--destacado);
+  color: #fff;
+  cursor: pointer;
+  margin-top: 18px;
+}
+.boton:active { background: var(--destacado-hover); }
+.boton.secundario { background: var(--acento); color: var(--texto); }
+.boton.peligro { background: transparent; color: var(--destacado); border: 1px solid var(--destacado); }
+.enlace { color: var(--destacado); font-size: 14px; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.error { color: var(--destacado); font-size: 14px; margin-top: 12px; }
+.fila-botones { display: flex; gap: 10px; }
+.fila-botones > * { flex: 1; }
+
+/* Selector Gasto / Ingreso */
+.segmentado { display: grid; grid-template-columns: 1fr 1fr; background: var(--entrada); border-radius: 12px; padding: 4px; }
+.segmentado input { display: none; }
+.segmentado label {
+  margin: 0; text-align: center; padding: 10px; border-radius: 9px;
+  font-size: 15px; font-weight: 600; color: var(--texto2); cursor: pointer;
+}
+#tipo-gasto:checked + label { background: var(--gasto); color: #fff; }
+#tipo-ingreso:checked + label { background: var(--ingreso); color: #fff; }
+
+/* Fichas de categoría */
+.fichas { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.fichas input { display: none; }
+.fichas label {
+  margin: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 4px;
+  border: 2px solid var(--borde);
+  border-radius: 14px;
+  background: var(--fondo2);
+  color: var(--texto);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+.fichas label .emoji { font-size: 22px; }
+.fichas input:checked + label { border-color: var(--color, var(--destacado)); background: var(--entrada); }
+.fichas [hidden] { display: none; }
+
+/* Gasto rápido */
+.rapido-botones { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; margin-top: 10px; scrollbar-width: none; }
+.rapido-botones button {
+  flex: 0 0 auto;
+  border: 0; border-radius: 999px;
+  background: var(--acento); color: var(--texto);
+  padding: 10px 14px; font: inherit; font-size: 14px; min-height: 44px; cursor: pointer;
+}
+
+/* ---------- Listas de movimientos ---------- */
+.movimiento { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.movimiento + .movimiento { border-top: 1px solid var(--borde); }
+.movimiento .icono {
+  flex: 0 0 42px; height: 42px;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  font-size: 19px;
+  background: color-mix(in srgb, var(--color) 22%, var(--fondo2));
+}
+.movimiento .textos { flex: 1; min-width: 0; }
+.movimiento .descripcion { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movimiento .detalle { font-size: 12px; color: var(--texto2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movimiento .monto { font-weight: 700; white-space: nowrap; }
+.dia { font-size: 13px; font-weight: 600; color: var(--texto2); margin: 18px 4px 6px; }
+.vacio { text-align: center; color: var(--texto2); padding: 24px 8px; }
+
+/* Filtros del historial */
+.filtros { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.filtros .completo { grid-column: 1 / -1; }
+.filtros select, .filtros input { min-height: 44px; padding: 10px 12px; font-size: 15px; }
+
+/* ---------- Gráficas (CSS y SVG, sin librerías) ---------- */
+.dona-contenedor { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.dona {
+  width: 150px; height: 150px; flex: 0 0 150px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+}
+.dona::before {
+  content: ""; grid-area: 1 / 1;
+  width: 96px; height: 96px; border-radius: 50%; background: var(--fondo2);
+}
+.dona .centro { grid-area: 1 / 1; z-index: 1; text-align: center; font-weight: 700; font-size: 14px; }
+.leyenda { flex: 1 1 180px; list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.leyenda li { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.leyenda .punto { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; }
+.leyenda .nombre { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.barras { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 8px; }
+.barras .mes { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.barras .par { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.barras .barra { width: 40%; max-width: 18px; border-radius: 5px 5px 0 0; min-height: 2px; }
+.barras .etiqueta { font-size: 11px; color: var(--texto2); margin-top: 4px; white-space: nowrap; }
+.claves { display: flex; gap: 14px; font-size: 12px; color: var(--texto2); margin-top: 10px; flex-wrap: wrap; }
+.claves span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; background: var(--c); vertical-align: -1px; }
+
+.top li { list-style: none; margin-bottom: 10px; font-size: 14px; }
+.top ul { margin: 0; padding: 0; }
+.top .linea { display: flex; justify-content: space-between; gap: 8px; }
+.top .riel { height: 8px; background: var(--entrada); border-radius: 4px; margin-top: 4px; overflow: hidden; }
+.top .relleno { height: 100%; border-radius: 4px; }
+
+.lineas svg { width: 100%; height: auto; display: block; overflow: visible; }
+.lineas .ejes { display: flex; justify-content: space-between; font-size: 10px; color: var(--texto2); margin-top: 4px; }
+
+.dato { margin-top: 10px; }
+.dato .titulo { font-size: 13px; color: var(--texto2); }
+.dato .valor { font-weight: 700; }
+.numero-grande { font-size: 30px; font-weight: 700; color: var(--gasto); }
+
+/* ---------- Aviso flotante ---------- */
+.aviso {
+  position: fixed;
+  left: 16px; right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  max-width: 420px; margin: 0 auto;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #fff; font-weight: 600;
+  background: #2e9c7c;
+  z-index: 20;
+  animation: aviso 3s ease forwards;
+}
+.aviso.error { background: var(--destacado); }
+.aviso.info { background: var(--neutro); }
+@keyframes aviso {
+  0% { opacity: 0; transform: translateY(20px); }
+  8%, 85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(20px); visibility: hidden; }
+}
+
+/* ---------- Pantallas de entrada ---------- */
+.entrada { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+.entrada .tarjeta { width: 100%; max-width: 420px; padding: 24px; }
+.logo { font-size: 26px; font-weight: 700; margin-bottom: 18px; }
+.logo span { color: var(--destacado); }
+.centrado { text-align: center; margin-top: 16px; }
+
+/* En pantallas grandes, más aire */
+@media (min-width: 700px) {
+  .resumen { grid-template-columns: repeat(4, 1fr); }
+  .pagina { padding-top: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aviso { animation: none; }
+}
