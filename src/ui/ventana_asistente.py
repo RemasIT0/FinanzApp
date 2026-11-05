@@ -1,14 +1,125 @@
-"""Panel flotante del asistente (chatbot). Las respuestas salen de utils/asistente.py;
-aquí solo se dibujan las burbujas, los atajos y los botones de acción."""
+"""El asistente en la app de escritorio:
+- MascotaFlotante: el muñequito peludo que flota abajo a la derecha. Al tocarlo abre o cierra el chat.
+- PanelAsistente: la ventana del chat. Las respuestas salen de utils/asistente.py;
+  aquí solo se dibujan las burbujas, los atajos y los botones de acción.
+"""
+import math
+import time
+import tkinter as tk
+
 import customtkinter as ctk
+from PIL import Image, ImageTk
 
 from ui.componentes import animaciones
 from ui.componentes.boton_personalizado import Boton
-from utils import asistente
+from utils import asistente, mascota
 from utils.temas import COLORES, NORMAL, NORMAL_NEGRITA, PEQUENO
 
-ANCHO, ALTO = 380, 560
+ANCHO, ALTO = 380, 520
 ANCHO_BURBUJA = 270
+ALTO_MASCOTA = 78
+MARGEN = 18                      # separación del muñeco con los bordes de la ventana
+ESPACIO_MASCOTA = ALTO_MASCOTA + MARGEN + 10   # lo que ocupa abajo (el chat se abre encima)
+
+
+COLOR_TRANSPARENTE = "#ff00ff"   # Windows hace "invisible" este color en la ventanita del muñeco
+
+
+def _imagen_recortada(alto):
+    """El muñeco listo para una ventana con color transparente.
+    Ese truco de Windows solo entiende "visible / invisible" (no semitransparente), así que:
+    los píxeles casi transparentes pasan a ser el color invisible y los bordes suaves se
+    mezclan con marrón (como son pelos, no se nota)."""
+    imagen = mascota.imagen(alto)
+    fondo = Image.new("RGBA", imagen.size, mascota.MARRONES[1])
+    mezcla = Image.alpha_composite(fondo, imagen)
+    mascara = imagen.getchannel("A").point(lambda a: 255 if a >= 110 else 0)
+    final = Image.new("RGB", imagen.size, COLOR_TRANSPARENTE)
+    final.paste(mezcla.convert("RGB"), mask=mascara)
+    return final
+
+
+class MascotaFlotante:
+    """El muñequito: vive en su propia ventanita sin bordes (con fondo invisible) que flota
+    sobre la esquina de abajo a la derecha de la ventana principal. Sube y baja suave y al
+    tocarlo llama a al_tocar().
+
+    ¿Por qué una ventanita aparte? Dentro de una ventana de Tkinter las imágenes no pueden
+    tener fondo transparente: se vería un recuadro detrás del muñeco al pasar sobre una tarjeta.
+    """
+
+    def __init__(self, ventana, al_tocar):
+        self.ventana = ventana          # la VentanaPrincipal (el globo de diálogo se dibuja ahí)
+        self.al_tocar = al_tocar
+        self.escala = ventana._get_widget_scaling()  # zoom de Windows (ej. 1.25 = 125 %)
+        alto = round(ALTO_MASCOTA * self.escala)   # en píxeles reales
+        self.foto = ImageTk.PhotoImage(_imagen_recortada(alto))
+        self.ancho_px, self.alto_px = self.foto.width(), self.foto.height()
+        self.ancho = round(self.ancho_px / self.escala)   # en medidas de la app (sin escalar)
+
+        self.ventanita = tk.Toplevel(ventana)
+        self.ventanita.overrideredirect(True)                       # sin bordes ni barra de título
+        self.ventanita.transient(ventana.winfo_toplevel())          # siempre encima de la app (y se minimiza con ella)
+        self.ventanita.configure(bg=COLOR_TRANSPARENTE)
+        self.ventanita.attributes("-transparentcolor", COLOR_TRANSPARENTE)
+        etiqueta = tk.Label(self.ventanita, image=self.foto, bg=COLOR_TRANSPARENTE, bd=0, highlightthickness=0,
+                            cursor="hand2")
+        etiqueta.pack()
+        etiqueta.bind("<Button-1>", lambda _: self.al_tocar())
+
+        # Si se minimiza la app, el muñeco se esconde; al volver, reaparece.
+        # (Ojo: estos eventos también llegan cuando se oculta cualquier parte de la app, por
+        #  eso se revisa que sea la ventana principal: e.widget is raiz.)
+        raiz = ventana.winfo_toplevel()
+        self._eventos = [
+            (raiz, "<Unmap>", raiz.bind("<Unmap>", lambda e: e.widget is raiz and self.ventanita.withdraw(), add="+")),
+            (raiz, "<Map>", raiz.bind("<Map>", lambda e: e.widget is raiz and self.ventanita.deiconify(), add="+"))]
+        self.inicio = time.perf_counter()
+        self.salto = 0.0       # altura extra de un salto (para llamar la atención)
+        self.globo = None
+        self._flotar()
+
+    def _flotar(self):
+        """Sigue a la ventana principal y sube y baja 4 px. Se reprograma solo cada 40 ms."""
+        if not self.ventanita.winfo_exists():
+            return
+        raiz = self.ventana.winfo_toplevel()
+        t = time.perf_counter() - self.inicio
+        margen = round(MARGEN * self.escala)
+        x = raiz.winfo_rootx() + raiz.winfo_width() - margen - self.ancho_px
+        y = (raiz.winfo_rooty() + raiz.winfo_height() - margen - self.alto_px
+             - round((4 * math.sin(t * 2.6) + self.salto) * self.escala))
+        # (Sin lift(): como es "transient" ya queda encima de la app, y lift() la traería
+        #  al frente sobre otros programas abiertos.)
+        self.ventanita.geometry(f"+{x}+{y}")
+        self.ventanita.after(40, self._flotar)
+
+    def destruir(self):
+        for widget, evento, identificador in self._eventos:
+            if widget.winfo_exists():
+                widget.unbind(evento, identificador)
+        if self.ventanita.winfo_exists():
+            self.ventanita.destroy()
+
+    def saltar(self):
+        """Da un saltito (se usa en el tutorial para señalarlo)."""
+        animaciones.animar(self.ventanita, 500, lambda a: setattr(self, "salto", 26 * math.sin(a * math.pi)),
+                           clave="_anim_salto")
+
+    def decir(self, texto, duracion=4500):
+        """Un globito de diálogo a la izquierda del muñeco que desaparece solo."""
+        self.callar()
+        self.globo = ctk.CTkLabel(self.ventana, text=texto, font=NORMAL_NEGRITA, corner_radius=14, height=38,
+                                  fg_color=COLORES["fondo2"], text_color=COLORES["texto"], cursor="hand2")
+        self.globo.bind("<Button-1>", lambda _: self.al_tocar())
+        self.globo.place(relx=1, rely=1, x=-(MARGEN + self.ancho + 8), y=-(MARGEN + 40), anchor="se")
+        self.globo.lift()
+        self.globo.after(duracion, self.callar)
+
+    def callar(self):
+        if self.globo is not None and self.globo.winfo_exists():
+            self.globo.destroy()
+        self.globo = None
 
 
 class PanelAsistente(ctk.CTkFrame):
@@ -22,15 +133,18 @@ class PanelAsistente(ctk.CTkFrame):
         self.abierto = False
 
         cabecera = ctk.CTkFrame(self, fg_color="transparent")
-        cabecera.pack(fill="x", padx=16, pady=(14, 6))
-        ctk.CTkLabel(cabecera, text="💬", font=("Segoe UI Emoji", 20), width=40, height=40, corner_radius=12,
-                     fg_color=COLORES["destacado"], text_color="#ffffff").pack(side="left")
+        cabecera.pack(fill="x", padx=14, pady=(12, 6))
+        imagen = mascota.imagen(84)
+        self.cara = ctk.CTkImage(imagen, size=(round(imagen.width * 42 / imagen.height), 42))
+        ctk.CTkLabel(cabecera, text="", image=self.cara).pack(side="left")
         textos = ctk.CTkFrame(cabecera, fg_color="transparent")
         textos.pack(side="left", padx=10)
         ctk.CTkLabel(textos, text="Asistente", font=NORMAL_NEGRITA, anchor="w", height=20).pack(anchor="w")
-        ctk.CTkLabel(textos, text="Respuestas rápidas sobre tu dinero y la app", font=PEQUENO,
+        ctk.CTkLabel(textos, text="Tu dinero y la app, rápido", font=PEQUENO,
                      text_color=COLORES["texto2"], anchor="w", height=16).pack(anchor="w")
         Boton(cabecera, "✕", estilo="fantasma", width=34, height=34, command=self.cerrar).pack(side="right")
+        Boton(cabecera, "Limpiar", icono="🗑", estilo="fantasma", width=90, height=34, font=PEQUENO,
+              command=self.limpiar).pack(side="right")
 
         # Escribir (abajo) y atajos (encima): se empaquetan antes que la conversación para que nunca se tapen
         fila = ctk.CTkFrame(self, fg_color="transparent")
@@ -51,15 +165,14 @@ class PanelAsistente(ctk.CTkFrame):
 
         self._mostrar_respuesta(asistente.bienvenida(usuario))
 
-    # ---------- Abrir / cerrar ----------
+    # ---------- Abrir / cerrar / limpiar ----------
 
     def abrir(self):
         self.abierto = True
         self.lift()
-        # Entra subiendo un poco desde abajo a la derecha. Queda 70 px arriba del borde para que
-        # los avisos flotantes (que salen abajo a la derecha) no tapen la caja de escribir.
-        animaciones.animar(self, 220, lambda a: self.place(relx=1, rely=1, x=-24, y=-70 + round(30 * (1 - a)),
-                                                           anchor="se"))
+        # Entra subiendo un poco, justo encima del muñeco
+        animaciones.animar(self, 220, lambda a: self.place(relx=1, rely=1, x=-MARGEN,
+                                                           y=-ESPACIO_MASCOTA + round(30 * (1 - a)), anchor="se"))
         self.after(50, self.entrada.focus)
 
     def cerrar(self):
@@ -68,6 +181,15 @@ class PanelAsistente(ctk.CTkFrame):
 
     def alternar(self):
         self.cerrar() if self.abierto else self.abrir()
+
+    def limpiar(self):
+        """Borra toda la conversación y vuelve a saludar."""
+        for hijo in self.conversacion.winfo_children():
+            hijo.destroy()
+        self._mostrar_respuesta(asistente.bienvenida(self.usuario))
+        # Volver arriba: si no, queda desplazado donde estaban los mensajes viejos y se ve vacío
+        self.after(120, lambda: self.conversacion._parent_canvas.yview_moveto(0.0))
+        self.entrada.focus()
 
     # ---------- Conversación ----------
 

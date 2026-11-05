@@ -45,11 +45,14 @@ CREATE TABLE IF NOT EXISTS categorias (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
--- Movimientos. El monto SIEMPRE es positivo: el campo "tipo" dice si es gasto o ingreso
+-- Movimientos. El monto SIEMPRE es positivo: el campo "tipo" dice si es gasto, ingreso o transferencia.
+-- En una transferencia el dinero sale de cuenta_id y entra a cuenta_destino_id
+-- (no cuenta como gasto ni como ingreso: solo mueve saldo entre tus cuentas).
 CREATE TABLE IF NOT EXISTS transacciones (
-    id              INT AUTO_INCREMENT PRIMARY KEY,
-    cuenta_id       INT NOT NULL,
-    categoria_id    INT NULL,
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    cuenta_id           INT NOT NULL,
+    cuenta_destino_id   INT NULL,
+    categoria_id        INT NULL,
     descripcion     VARCHAR(200) NOT NULL DEFAULT '',
     monto           DECIMAL(12,2) NOT NULL,
     fecha           DATE NOT NULL,
@@ -57,8 +60,17 @@ CREATE TABLE IF NOT EXISTS transacciones (
     origen          ENUM('manual', 'csv', 'email') NOT NULL DEFAULT 'manual',
     fecha_creacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (cuenta_id) REFERENCES cuentas(id) ON DELETE CASCADE,
+    FOREIGN KEY (cuenta_destino_id) REFERENCES cuentas(id) ON DELETE CASCADE,
     FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL,
     INDEX idx_fecha (fecha)
+);
+
+-- Preferencias de cada usuario (una fila por usuario)
+CREATE TABLE IF NOT EXISTS preferencias (
+    usuario_id                INT PRIMARY KEY,
+    cuenta_predeterminada_id  INT NULL,   -- la del gasto rápido y la que aparece elegida en "Nuevo movimiento"
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (cuenta_predeterminada_id) REFERENCES cuentas(id) ON DELETE SET NULL
 );
 
 -- Presupuesto mensual por categoría (uno por categoría y mes)

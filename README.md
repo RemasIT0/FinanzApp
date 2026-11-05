@@ -44,9 +44,14 @@ Esos datos se guardan en `data/config.json`, que no se sube a git.
 7. **¿Olvidaste tu contraseña?** (en la pantalla de inicio de sesión) manda un código de 6 dígitos
    al correo del usuario. Antes hay que configurar **una sola vez** el Gmail desde el que la app envía
    esos correos: *Configuración → Datos → Configurar correo de envío* (también con contraseña de aplicación).
-8. **Asistente** (💬 abajo en la barra lateral): responde cuánto gastaste, tus saldos, presupuestos y cómo
-   usar la app, con botones que te llevan a cada sección. Funciona sin internet (respuestas programadas).
+8. **Asistente**: el muñequito peludo que flota abajo a la derecha (también en el celular). Tocalo y te
+   responde cuánto gastaste, tus saldos, presupuestos y cómo usar la app. «🗑 Limpiar» borra la conversación.
+   Funciona sin internet (respuestas programadas).
 9. **Tutorial**: aparece solo la primera vez que entras. Para verlo otra vez, escríbele «tutorial» al asistente.
+10. **Transferencias**: en «＋ Nuevo movimiento» elige «Transferencia» para pasar plata entre tus cuentas
+    (no cuenta como gasto ni ingreso, solo cambia los saldos).
+11. **Cuenta predeterminada**: en Configuración → Cuentas → ✎, marca «Usar para el gasto rápido y los
+    movimientos nuevos». Se ve con una ★.
 
 ## Usarla desde el celular
 
@@ -86,7 +91,7 @@ src/
 │   ├── ventana_transacciones.py Historial
 │   ├── ventana_reportes.py     Gráficas
 │   ├── ventana_config.py       Cuentas, categorías, presupuestos, respaldo
-│   ├── ventana_asistente.py    Panel del chat del asistente
+│   ├── ventana_asistente.py    Muñequito flotante + panel del chat
 │   ├── tutorial.py             Guía paso a paso de la primera vez
 │   └── componentes/        Botones, tarjetas, tabla, gráficas, avisos, animaciones
 ├── email_parser/
@@ -100,6 +105,7 @@ src/
     ├── enviar_correo.py    Envía correos (códigos) desde el Gmail de la app por SMTP
     ├── recuperacion.py     Pedir código para recuperar la contraseña (escritorio y web)
     ├── asistente.py        "Cerebro" del chatbot: entiende la pregunta y arma la respuesta
+    ├── mascota.py          Dibuja el muñequito del asistente (Pillow), para escritorio y web
     └── config.py           Lee/guarda data/config.json
 ```
 

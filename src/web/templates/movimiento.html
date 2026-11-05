@@ -5,17 +5,20 @@
 
 <form class="tarjeta" method="post" action="/movimiento" id="formulario">
   <input type="hidden" name="id" value="{{ mov.id or '' }}">
-  <div class="segmentado">
-    <input type="radio" name="tipo" value="gasto" id="tipo-gasto" {{ 'checked' if mov.tipo != 'ingreso' }}>
+  <div class="segmentado tres">
+    <input type="radio" name="tipo" value="gasto" id="tipo-gasto" {{ 'checked' if mov.tipo not in ('ingreso', 'transferencia') }}>
     <label for="tipo-gasto">Gasto</label>
     <input type="radio" name="tipo" value="ingreso" id="tipo-ingreso" {{ 'checked' if mov.tipo == 'ingreso' }}>
     <label for="tipo-ingreso">Ingreso</label>
+    <input type="radio" name="tipo" value="transferencia" id="tipo-transferencia" {{ 'checked' if mov.tipo == 'transferencia' }}>
+    <label for="tipo-transferencia">Transferir</label>
   </div>
 
   <label for="monto">Monto</label>
   <input id="monto" name="monto" class="monto-grande" inputmode="decimal" placeholder="$ 0,00"
          value="{{ mov.monto }}" required {{ 'autofocus' if not mov.id }}>
 
+  <div id="bloque-categorias">
   <label>Categoría</label>
   <div class="fichas">
     {% for c in categorias %}
@@ -26,10 +29,12 @@
     </span>
     {% endfor %}
   </div>
+  </div>
+
 
   <div class="fila-botones">
     <div>
-      <label for="cuenta">Cuenta</label>
+      <label for="cuenta" id="etiqueta-cuenta">Cuenta</label>
       <select id="cuenta" name="cuenta_id">
         {% for c in cuentas %}
         <option value="{{ c.id }}" {{ 'selected' if c.id == mov.cuenta_id }}>{{ c.nombre }}</option>
@@ -40,6 +45,16 @@
       <label for="fecha">Fecha</label>
       <input id="fecha" name="fecha" type="date" value="{{ mov.fecha }}" required>
     </div>
+  </div>
+
+  <div id="bloque-destino" hidden>
+    <label for="destino">Hacia la cuenta</label>
+    <select id="destino" name="cuenta_destino_id">
+      {% for c in cuentas %}
+      <option value="{{ c.id }}" {{ 'selected' if c.id == mov.cuenta_destino_id }}>{{ c.nombre }}</option>
+      {% endfor %}
+    </select>
+    <p class="pequeno secundario" style="margin:6px 0 0">Mueve dinero entre tus cuentas: no cuenta como gasto ni como ingreso.</p>
   </div>
 
   <label for="descripcion">Descripción (opcional)</label>
@@ -60,9 +75,19 @@
 
 {% block scripts %}
 <script>
-  // Solo se muestran las categorías del tipo elegido (gasto o ingreso)
+  // Solo se muestran las categorías del tipo elegido (gasto o ingreso).
+  // En una transferencia se ocultan las categorías y se muestra la cuenta de destino.
   const formulario = document.getElementById("formulario");
   function mostrarCategorias() {
+    const transferencia = formulario.tipo.value === "transferencia";
+    document.getElementById("bloque-categorias").hidden = transferencia;
+    document.getElementById("bloque-destino").hidden = !transferencia;
+    document.getElementById("etiqueta-cuenta").textContent = transferencia ? "Desde" : "Cuenta";
+    const destino = formulario.cuenta_destino_id;
+    if (transferencia && destino.value === formulario.cuenta_id.value) {
+      const otra = [...destino.options].find(o => o.value !== formulario.cuenta_id.value);
+      if (otra) destino.value = otra.value;
+    }
     const ingreso = formulario.tipo.value === "ingreso" ? "1" : "0";
     let visibles = [];
     formulario.querySelectorAll(".fichas > span").forEach(grupo => {

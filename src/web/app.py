@@ -11,13 +11,14 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
+from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import categorias_dao, cuentas_dao, presupuestos_dao, transacciones_dao, usuarios_dao
-from utils import calculos, recuperacion
+from utils import asistente, calculos, mascota, recuperacion
 from utils.config import cargar_config
 from utils.validadores import convertir_monto, email_valido, password_valida, texto_requerido
 
@@ -43,6 +44,8 @@ class SinSesion(Exception):
 
 @app.exception_handler(SinSesion)
 def _a_login(request, _):
+    if request.url.path.startswith("/asistente"):  # el chat pide datos con JavaScript: responder JSON
+        return JSONResponse({"error": "sin sesión"}, status_code=401)
     return RedirectResponse("/login", status_code=303)
 
 
@@ -76,8 +79,10 @@ def ir(url):
 
 
 def movimiento_para_vista(t):
-    es_gasto = t["tipo"] == "gasto"
-    return {**t, "monto": float(t["monto"]), "con_signo": float(t["monto"]) * (-1 if es_gasto else 1),
+    if t["tipo"] == "transferencia":
+        return {**t, "monto": float(t["monto"]), "texto_monto": calculos.texto_monto(t), "icono": "⇄",
+                "color": NEUTRO, "categoria": "Transferencia", "cuenta": calculos.texto_cuenta(t)}
+    return {**t, "monto": float(t["monto"]), "texto_monto": calculos.texto_monto(t),
             "icono": t["icono"] or "❔", "color": t["color"] or "#7f8c8d",
             "categoria": t["categoria"] or "Sin categoría"}
 
@@ -272,7 +277,7 @@ def inicio(request: Request):
 
 @app.post("/rapido")
 def gasto_rapido(request: Request, monto: str = Form(""), categoria_id: str = Form("")):
-    """Igual que en escritorio: se guarda en la primera cuenta activa con fecha de hoy."""
+    """Igual que en escritorio: se guarda en la cuenta predeterminada (o la primera) con fecha de hoy."""
     usuario = usuario_actual(request)
     valor = convertir_monto(monto)
     categoria_id = entero(categoria_id)
@@ -283,8 +288,9 @@ def gasto_rapido(request: Request, monto: str = Form(""), categoria_id: str = Fo
     elif not cuentas:
         avisar(request, "Primero crea una cuenta (en la app de escritorio)", "error")
     elif categoria:
-        transacciones_dao.crear(cuentas[0]["id"], categoria["id"], categoria["nombre"], valor, date.today(), "gasto")
-        avisar(request, f"✓ {calculos.formato_moneda(valor)} en {categoria['nombre']}")
+        cuenta = cuentas_dao.predeterminada(cuentas)
+        transacciones_dao.crear(cuenta["id"], categoria["id"], categoria["nombre"], valor, date.today(), "gasto")
+        avisar(request, f"✓ {calculos.formato_moneda(valor)} en {categoria['nombre']} ({cuenta['nombre']})")
     return ir("/")
 
 
@@ -315,7 +321,7 @@ def historial(request: Request, periodo: str = "Este mes", tipo: str = "", categ
     desde, hasta = rango_periodo(periodo)
     movimientos = [movimiento_para_vista(t) for t in transacciones_dao.buscar(
         usuario["id"], desde=desde, hasta=hasta, categoria_id=categoria or None,
-        tipo=tipo if tipo in ("gasto", "ingreso") else None, texto=q.strip())]
+        tipo=tipo if tipo in ("gasto", "ingreso", "transferencia") else None, texto=q.strip())]
 
     # Agrupados por día, como en las apps de banco
     dias = []
@@ -333,6 +339,8 @@ def historial(request: Request, periodo: str = "Este mes", tipo: str = "", categ
 
 # ---------- Nuevo / editar movimiento ----------
 
+TIPOS = ("gasto", "ingreso", "transferencia")
+
 def formulario(request, usuario, mov, error=None):
     return mostrar(request, "movimiento.html", usuario=usuario, seccion="nuevo", mov=mov, error=error,
                    cuentas=cuentas_dao.listar(usuario["id"], solo_activas=True),
@@ -342,9 +350,11 @@ def formulario(request, usuario, mov, error=None):
 @app.get("/movimiento/nuevo")
 def movimiento_nuevo(request: Request, tipo: str = "gasto"):
     usuario = usuario_actual(request)
-    return formulario(request, usuario, {"id": None, "tipo": "ingreso" if tipo == "ingreso" else "gasto",
+    cuenta = cuentas_dao.predeterminada(cuentas_dao.listar(usuario["id"], solo_activas=True))
+    return formulario(request, usuario, {"id": None, "tipo": tipo if tipo in TIPOS else "gasto",
                                          "monto": "", "fecha": date.today(), "descripcion": "",
-                                         "categoria_id": None, "cuenta_id": None})
+                                         "categoria_id": None, "cuenta_id": cuenta["id"] if cuenta else None,
+                                         "cuenta_destino_id": None})
 
 
 @app.get("/movimiento/{transaccion_id}")
@@ -359,17 +369,20 @@ def movimiento_editar(request: Request, transaccion_id: int):
 
 @app.post("/movimiento")
 def movimiento_guardar(request: Request, id: str = Form(""), tipo: str = Form("gasto"), monto: str = Form(""),
-                       categoria_id: str = Form(""), cuenta_id: str = Form(""), fecha: str = Form(""),
-                       descripcion: str = Form("")):
+                       categoria_id: str = Form(""), cuenta_id: str = Form(""), cuenta_destino_id: str = Form(""),
+                       fecha: str = Form(""), descripcion: str = Form("")):
     usuario = usuario_actual(request)
     id, categoria_id, cuenta_id = entero(id), entero(categoria_id), entero(cuenta_id)
+    destino_id = entero(cuenta_destino_id)
     uid = usuario["id"]
-    tipo = "ingreso" if tipo == "ingreso" else "gasto"
+    tipo = tipo if tipo in TIPOS else "gasto"
     mov = {"id": id or None, "tipo": tipo, "monto": monto, "categoria_id": categoria_id or None,
-           "cuenta_id": cuenta_id, "fecha": fecha, "descripcion": descripcion}
+           "cuenta_id": cuenta_id, "cuenta_destino_id": destino_id, "fecha": fecha, "descripcion": descripcion}
 
-    # La cuenta y la categoría tienen que ser del usuario (no confiamos en lo que manda el navegador)
-    cuenta = next((c for c in cuentas_dao.listar(uid, solo_activas=True) if c["id"] == cuenta_id), None)
+    # Las cuentas y la categoría tienen que ser del usuario (no confiamos en lo que manda el navegador)
+    cuentas = cuentas_dao.listar(uid, solo_activas=True)
+    cuenta = next((c for c in cuentas if c["id"] == cuenta_id), None)
+    destino = next((c for c in cuentas if c["id"] == destino_id), None)
     categoria = next((c for c in categorias_dao.listar(uid)
                       if c["id"] == categoria_id and bool(c["es_ingreso"]) == (tipo == "ingreso")), None)
     valor = convertir_monto(monto)
@@ -383,17 +396,26 @@ def movimiento_guardar(request: Request, id: str = Form(""), tipo: str = Form("g
         return formulario(request, usuario, mov, "Elige una cuenta (si no tienes, créala en la app de escritorio).")
     if dia is None:
         return formulario(request, usuario, mov, "Elige una fecha válida.")
+    if tipo == "transferencia":
+        if destino is None or destino["id"] == cuenta["id"]:
+            return formulario(request, usuario, mov, "Elige una cuenta de destino distinta a la de origen.")
+        categoria = None
+    else:
+        destino = None
 
-    texto = descripcion.strip()[:200] or (categoria["nombre"] if categoria else tipo.capitalize())
+    texto = descripcion.strip()[:200] or (
+        f"Transferencia a {destino['nombre']}" if destino else categoria["nombre"] if categoria else tipo.capitalize())
     categoria_id = categoria["id"] if categoria else None
+    destino_id = destino["id"] if destino else None
     if id:
         if transacciones_dao.obtener(id, uid) is None:
             avisar(request, "Ese movimiento ya no existe", "error")
             return ir("/historial")
-        transacciones_dao.actualizar(id, uid, cuenta["id"], categoria_id, texto, valor, dia, tipo)
+        transacciones_dao.actualizar(id, uid, cuenta["id"], categoria_id, texto, valor, dia, tipo,
+                                     cuenta_destino_id=destino_id)
         avisar(request, "✓ Cambios guardados")
         return ir("/historial")
-    transacciones_dao.crear(cuenta["id"], categoria_id, texto, valor, dia, tipo)
+    transacciones_dao.crear(cuenta["id"], categoria_id, texto, valor, dia, tipo, cuenta_destino_id=destino_id)
     avisar(request, "✓ Movimiento guardado")
     return ir("/")
 
@@ -404,6 +426,54 @@ def movimiento_eliminar(request: Request, transaccion_id: int):
     transacciones_dao.eliminar(transaccion_id, usuario["id"])  # solo borra si es suyo
     avisar(request, "Movimiento eliminado", "info")
     return ir("/historial")
+
+
+# ---------- Asistente (el muñequito) ----------
+
+# Secciones que existen en la web. Las otras (importar, correo, configuración) son solo de escritorio.
+_URLS_WEB = {"inicio": "/", "historial": "/historial", "reportes": "/reportes"}
+
+
+class Pregunta(BaseModel):
+    texto: str = ""
+
+
+def respuesta_web(respuesta):
+    """Adapta los botones de una respuesta del asistente a la web: ("ir", "historial") -> "/historial"."""
+    acciones, solo_escritorio = [], False
+    for texto, accion in respuesta["acciones"]:
+        if accion[0] == "nuevo":
+            acciones.append({"texto": texto, "url": "/movimiento/nuevo"})
+        elif accion[0] == "ir" and accion[1] in _URLS_WEB:
+            acciones.append({"texto": texto, "url": _URLS_WEB[accion[1]]})
+        elif accion[0] == "ir":
+            solo_escritorio = True
+    texto = respuesta["texto"]
+    if solo_escritorio:
+        texto += "\n\n(Esto se hace en la app de la computadora.)"
+    sugerencias = [s for s in respuesta["sugerencias"] if "tutorial" not in s.lower()]
+    return {"texto": texto, "acciones": acciones, "sugerencias": sugerencias}
+
+
+@app.get("/mascota.png")
+def imagen_mascota():
+    # Se dibuja una vez y queda en memoria; el navegador la guarda un día
+    return Response(mascota.png(192), media_type="image/png", headers={"Cache-Control": "max-age=86400"})
+
+
+@app.get("/asistente/bienvenida")
+def asistente_bienvenida(request: Request):
+    return respuesta_web(asistente.bienvenida(usuario_actual(request)))
+
+
+@app.post("/asistente")
+def asistente_preguntar(request: Request, pregunta: Pregunta):
+    usuario = usuario_actual(request)
+    if "tutorial" in asistente.normalizar(pregunta.texto):
+        return {"texto": "El tutorial guiado está en la app de la computadora. Aquí puedes preguntarme "
+                         "por tus gastos, saldos o cómo registrar un movimiento.",
+                "acciones": [], "sugerencias": asistente.SUGERENCIAS_INICIO[:3]}
+    return respuesta_web(asistente.responder(pregunta.texto[:300], usuario))
 
 
 # ---------- Reportes ----------

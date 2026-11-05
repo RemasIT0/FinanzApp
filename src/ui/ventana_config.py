@@ -123,7 +123,7 @@ class Dialogo(ctk.CTkToplevel):
 
 class DialogoCuenta(Dialogo):
     def __init__(self, master, usuario, al_guardar, cuenta=None):
-        super().__init__(master, "Editar cuenta" if cuenta else "Nueva cuenta", al_guardar, 640)
+        super().__init__(master, "Editar cuenta" if cuenta else "Nueva cuenta", al_guardar, 690)
         self.usuario, self.cuenta = usuario, cuenta or {}
         self.nombre = self.entrada("Nombre (ej. BBVA Nómina)", self.cuenta.get("nombre", ""))
         self.etiqueta("Tipo")
@@ -136,6 +136,12 @@ class DialogoCuenta(Dialogo):
         self.etiqueta("Color")
         self.color = SelectorColor(self.cuerpo, self.cuenta.get("color_icono", "#3498db"))
         self.color.pack(anchor="w")
+        self.predeterminada = ctk.CTkCheckBox(self.cuerpo, text="Usar para el gasto rápido y los movimientos nuevos",
+                                              font=PEQUENO, fg_color=COLORES["destacado"],
+                                              hover_color=COLORES["destacado_hover"], text_color=COLORES["texto"])
+        if self.cuenta.get("es_predeterminada"):
+            self.predeterminada.select()
+        self.predeterminada.pack(anchor="w", pady=(14, 0))
         self.nombre.focus()
 
     def guardar(self):
@@ -153,9 +159,14 @@ class DialogoCuenta(Dialogo):
         tipo = next(k for k, v in cuentas_dao.TIPOS.items() if v == self.tipo.get())
         datos = (nombre, tipo, self.banco.get().strip()[:100], digitos, saldo, self.color.valor)
         if self.cuenta:
-            cuentas_dao.actualizar(self.cuenta["id"], self.usuario["id"], *datos)
+            cuenta_id = self.cuenta["id"]
+            cuentas_dao.actualizar(cuenta_id, self.usuario["id"], *datos)
         else:
-            cuentas_dao.crear(self.usuario["id"], *datos)
+            cuenta_id = cuentas_dao.crear(self.usuario["id"], *datos)
+        if self.predeterminada.get():
+            cuentas_dao.marcar_predeterminada(self.usuario["id"], cuenta_id)
+        elif self.cuenta.get("es_predeterminada"):
+            cuentas_dao.marcar_predeterminada(self.usuario["id"], None)  # le quitaron la marca
         return True
 
 
@@ -288,6 +299,8 @@ class PanelConfig(ctk.CTkFrame):
                 detalle += f" · {c['banco']}"
             if c["ultimos_4_digitos"]:
                 detalle += f" · •••• {c['ultimos_4_digitos']}"
+            if c["es_predeterminada"]:
+                detalle += "  ·  ★ Predeterminada"
             saldo = float(c["saldo_actual"])
             _fila(self.lista_cuentas, "💳" if "tarjeta" in c["tipo"] else "🏦" if c["tipo"] == "banco" else "👛",
                   c["color_icono"], c["nombre"], detalle, calculos.formato_moneda(saldo),

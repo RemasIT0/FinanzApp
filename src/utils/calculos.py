@@ -28,6 +28,32 @@ def formato_moneda(valor, con_signo=False):
     return ("+" + texto) if con_signo and valor > 0 else texto
 
 
+# ---------- Cómo se muestra un movimiento (igual en todas las pantallas) ----------
+
+def monto_con_signo(t):
+    """Gasto en negativo, ingreso en positivo; una transferencia no suma ni resta (0 de signo)."""
+    monto = float(t["monto"])
+    return -monto if t["tipo"] == "gasto" else monto
+
+
+def texto_monto(t):
+    """'-$ 1.250,00' (gasto) · '+$ 1.250,00' (ingreso) · '⇄ $ 1.250,00' (transferencia)"""
+    if t["tipo"] == "transferencia":
+        return "⇄ " + formato_moneda(float(t["monto"]))
+    return formato_moneda(monto_con_signo(t), con_signo=True)
+
+
+def texto_cuenta(t):
+    """'Galicia' o, en una transferencia, 'Galicia → Mercado Pago'."""
+    return f"{t['cuenta']} → {t['cuenta_destino']}" if t.get("cuenta_destino") else t["cuenta"]
+
+
+def texto_categoria(t):
+    if t["tipo"] == "transferencia":
+        return "⇄  Transferencia"
+    return f"{t['icono']}  {t['categoria']}" if t.get("categoria") else "Sin categoría"
+
+
 def monto_para_editar(valor):
     """Cómo se muestra un monto dentro de un campo para editarlo: 1250.5 -> '1250,50'"""
     return f"{float(valor):.2f}".replace(".", ",")

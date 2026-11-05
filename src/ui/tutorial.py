@@ -18,7 +18,7 @@ ANCHO_TARJETA = 380
 PASOS = [
     {"titulo": "¡Bienvenido a FinanzApp! 👋",
      "texto": "Te muestro en un minuto cómo funciona. Puedes saltarlo y volver a verlo cuando quieras "
-              "desde el Asistente (abajo a la izquierda)."},
+              "pidiéndoselo al asistente (el muñequito de abajo a la derecha)."},
     {"seccion": "inicio", "objetivo": "inicio", "titulo": "Inicio",
      "texto": "Tu resumen del mes: ingresos, gastos, balance y ahorro, con gráficas y tus últimos movimientos.\n\n"
               "Usa «⚡ Gasto rápido»: escribe un monto y toca una categoría."},
@@ -36,8 +36,8 @@ PASOS = [
     {"seccion": "config", "objetivo": "config", "titulo": "Configuración",
      "texto": "Crea tus cuentas (banco, tarjetas, efectivo), categorías y presupuestos. "
               "En «Datos» configuras el correo para recuperar tu contraseña."},
-    {"seccion": "inicio", "objetivo": "asistente", "titulo": "Asistente",
-     "texto": "¿Dudas? Pregúntale cuánto gastaste, tus saldos o cómo hacer algo. "
+    {"seccion": "inicio", "objetivo": "mascota", "titulo": "Tu asistente",
+     "texto": "Este muñequito es tu asistente. Tocalo y pregúntale cuánto gastaste, tus saldos o cómo hacer algo. "
               "Escríbele «tutorial» para ver esta guía otra vez."},
 ]
 
@@ -59,8 +59,8 @@ class Tutorial:
         self._mostrar()
 
     def _widget(self, objetivo):
-        if objetivo in ("nuevo", "asistente"):
-            return getattr(self.ventana, f"boton_{objetivo}")
+        if objetivo == "nuevo":
+            return self.ventana.boton_nuevo
         return self.ventana.botones_menu.get(objetivo)
 
     def _quitar_resaltado(self):
@@ -116,6 +116,18 @@ class Tutorial:
         v.update_idletasks()
         alto_ventana = v.winfo_height() / escala
         alto_tarjeta = self.tarjeta.winfo_reqheight() / escala
+        if paso.get("objetivo") == "mascota":
+            # El muñeco está abajo a la derecha: la tarjeta va a su izquierda y él da un saltito
+            mascota = v.mascota
+            ancho_mascota = mascota.ancho
+            self.flecha.configure(text="▶")
+            self.flecha.place(relx=1, rely=1, x=-(ancho_mascota + 24), y=-46, anchor="e")
+            self.tarjeta.place(relx=1, rely=1, x=-(ancho_mascota + 50), y=-16, anchor="se")
+            self.flecha.lift()
+            self.tarjeta.lift()
+            mascota.saltar()
+            return
+        self.flecha.configure(text="◀")
         objetivo = self._widget(paso.get("objetivo")) if paso.get("objetivo") else None
 
         if objetivo is None:  # paso sin botón: tarjeta en el centro

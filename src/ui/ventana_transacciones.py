@@ -17,7 +17,7 @@ from utils.temas import COLORES, NORMAL, PEQUENO, TITULO, opciones_calendario
 
 TODAS = "Todas"
 PERIODOS = ["Este mes", "Mes pasado", "Últimos 3 meses", "Este año", "Todo"]
-TIPOS = {"Todos": None, "Gastos": "gasto", "Ingresos": "ingreso"}
+TIPOS = {"Todos": None, "Gastos": "gasto", "Ingresos": "ingreso", "Transferencias": "transferencia"}
 
 
 def _menu(master, valores, comando, ancho=140):
@@ -57,7 +57,7 @@ class PanelTransacciones(ctk.CTkFrame):
         self.hasta = DateEntry(filtros, width=11, **opciones_calendario())
         self.categoria = _menu(filtros, [TODAS], lambda _: self.refrescar())
         self.cuenta = _menu(filtros, [TODAS], lambda _: self.refrescar())
-        self.tipo = _menu(filtros, list(TIPOS), lambda _: self.refrescar(), ancho=110)
+        self.tipo = _menu(filtros, list(TIPOS), lambda _: self.refrescar(), ancho=140)
         for columna, (titulo, widget) in enumerate([("Periodo", self.periodo), ("Desde", self.desde),
                                                     ("Hasta", self.hasta), ("Categoría", self.categoria),
                                                     ("Cuenta", self.cuenta), ("Tipo", self.tipo)], start=1):

@@ -109,7 +109,7 @@ def _ultimos(usuario):
         return _respuesta("Todavía no tienes movimientos.", [("＋ Registrar uno", ("nuevo",))])
     lineas = "\n".join(
         f"• {t['fecha']:%d/%m} {t['descripcion'][:28]}: "
-        f"{dinero(float(t['monto']) * (-1 if t['tipo'] == 'gasto' else 1), con_signo=True)}" for t in ultimos)
+        f"{calculos.texto_monto(t)}" for t in ultimos)
     return _respuesta(f"Tus últimos movimientos:\n{lineas}", [("Ver historial", ("ir", "historial"))])
 
 
@@ -137,6 +137,18 @@ INTENCIONES = [
            "2. Elige Gasto o Ingreso, escribe el monto y toca una categoría.\n3. Elige cuenta y fecha, y Guardar.\n\n"
            "Más rápido: en Inicio usa «⚡ Gasto rápido»: escribe el monto y toca la categoría.",
            [("＋ Nuevo movimiento", ("nuevo",))], ["¿Cómo edito un movimiento?"])),
+    ("transferencia", ["transferencia", "transferir", "transfiero", "pasar plata", "paso plata", "mover dinero",
+                       "pasar dinero", "de una cuenta a otra", "entre mis cuentas"],
+     _fija("Para pasar plata entre tus cuentas (ej. de Galicia a Mercado Pago):\n1. «＋ Nuevo movimiento».\n"
+           "2. Elige «Transferencia», escribe el monto.\n3. Elige «Desde la cuenta» y «Hacia la cuenta».\n\n"
+           "No cuenta como gasto ni como ingreso: solo cambia el saldo de cada cuenta.",
+           [("＋ Nueva transferencia", ("nuevo",))], ["Saldo de mis cuentas"])),
+    ("predeterminada", ["predeterminada", "por defecto", "cuenta del gasto rapido", "gasto rapido",
+                        "cuenta principal"],
+     _fija("El gasto rápido y los movimientos nuevos usan tu cuenta predeterminada.\n\nPara elegirla: "
+           "Configuración → Cuentas → ✎ en la cuenta → marca «Usar para el gasto rápido y los movimientos nuevos». "
+           "Se ve con una ★ en la lista.",
+           [("Abrir Configuración", ("ir", "config"))])),
     ("editar", ["editar", "edito", "borrar", "borro", "eliminar", "corregir", "modificar", "me equivoque"],
      _fija("Para editar o borrar un movimiento: ve a Historial, búscalo con los filtros y "
            "haz doble clic (o selecciónalo y toca Editar / Eliminar).",
@@ -181,6 +193,8 @@ INTENCIONES = [
      _fija("Para respaldar todo: Configuración → Datos → Exportar respaldo (un archivo .json). "
            "Con «Importar respaldo» lo cargas en esta u otra computadora.",
            [("Abrir Configuración", ("ir", "config"))])),
+    ("limpiar", ["limpiar", "borrar chat", "borrar el chat", "borrar mensajes", "empezar de nuevo"],
+     _fija("Para limpiar esta conversación toca «🗑 Limpiar» arriba del chat.")),
     ("tema", ["modo oscuro", "modo claro", "oscuro", "claro", "tema", "colores"],
      _fija("Cambia entre modo claro y oscuro con el interruptor «Modo oscuro» abajo en la barra lateral.")),
     ("celular", ["celular", "movil", "telefono", "android", "iphone", "version web"],

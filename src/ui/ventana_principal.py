@@ -9,7 +9,7 @@ from ui.componentes.aviso import mostrar_aviso
 from ui.componentes.boton_personalizado import Boton, BotonMenu, hover_suave
 from ui.componentes.tarjeta_resumen import Tarjeta, TarjetaResumen, tono_suave
 from ui.tutorial import Tutorial
-from ui.ventana_asistente import PanelAsistente
+from ui.ventana_asistente import ESPACIO_MASCOTA, MascotaFlotante, PanelAsistente
 from ui.ventana_config import PanelConfig
 from ui.ventana_correo import PanelCorreo
 from ui.ventana_importar import PanelImportar
@@ -54,8 +54,14 @@ class VentanaPrincipal(ctk.CTkFrame):
 
         self.asistente = None   # el panel del chat se crea la primera vez que se abre
         self.tutorial = None
+        # El muñequito del asistente, flotando abajo a la derecha
+        self.mascota = MascotaFlotante(self, al_tocar=self.alternar_asistente)
+        # Los avisos flotantes se corren a la izquierda para no tapar al muñeco
+        self.winfo_toplevel().margen_aviso = ESPACIO_MASCOTA
         if not usuarios_dao.vio_tutorial(usuario["id"]):
             self.after(700, self.iniciar_tutorial)  # primera vez: guía de bienvenida
+        else:
+            self.after(900, lambda: self.mascota.decir("¿Te ayudo? 👋"))
 
     def _barra_lateral(self):
         barra = self.barra = ctk.CTkFrame(self, width=240, corner_radius=0, fg_color=COLORES["fondo2"])
@@ -90,14 +96,8 @@ class VentanaPrincipal(ctk.CTkFrame):
         if modo_oscuro():
             self.interruptor.select()
         self.interruptor.pack(anchor="w", padx=10, pady=(12, 8))
-        # Asistente y Salir en la misma fila, para que la barra quepa en pantallas bajas (notebooks)
-        fila = ctk.CTkFrame(inferior, fg_color="transparent")
-        fila.pack(fill="x")
-        self.boton_asistente = Boton(fila, "Asistente", icono="💬", estilo="secundario", height=38,
-                                     command=self.alternar_asistente)
-        self.boton_asistente.pack(side="left", fill="x", expand=True)
-        Boton(fila, "Salir", estilo="fantasma", width=72, height=38,
-              command=self.al_salir).pack(side="left", padx=(6, 0))
+        Boton(inferior, "Cerrar sesión", icono="⇠", estilo="fantasma", anchor="w",
+              command=self.al_salir).pack(fill="x")
 
     def _tarjeta_usuario(self, master):
         """Círculo con las iniciales del usuario, su nombre y su correo."""
@@ -175,11 +175,15 @@ class VentanaPrincipal(ctk.CTkFrame):
             self.after_cancel(self._id_correo)
         if getattr(self, "tutorial", None) is not None:
             self.tutorial.cancelar()  # cerró sesión a mitad del tutorial: se verá la próxima vez
+        self.winfo_toplevel().margen_aviso = 0  # en el login no hay muñeco
+        if getattr(self, "mascota", None) is not None:
+            self.mascota.destruir()
         super().destroy()
 
     # ---------- Asistente y tutorial ----------
 
     def alternar_asistente(self):
+        self.mascota.callar()
         if self.asistente is None:
             self.asistente = PanelAsistente(self, self.usuario, al_accion=self._accion_asistente)
         self.asistente.alternar()
@@ -203,7 +207,8 @@ class VentanaPrincipal(ctk.CTkFrame):
     def _fin_tutorial(self):
         self.tutorial = None
         self.mostrar("inicio")
-        mostrar_aviso(self, "¿Dudas? Toca «💬 Asistente» cuando quieras", tipo="info", duracion=3500)
+        self.mascota.saltar()
+        self.mascota.decir("¿Dudas? ¡Tocame! 👋")
 
     def nuevo_movimiento(self):
         VentanaRegistro(self, self.usuario, al_guardar=self._movimiento_guardado)
@@ -292,8 +297,9 @@ class PanelDashboard(ctk.CTkScrollableFrame):
         self.monto_rapido.pack(side="left", padx=(0, 12))
         self.botones_rapidos = ctk.CTkFrame(barra, fg_color="transparent")
         self.botones_rapidos.pack(side="left", fill="x", expand=True)
-        ctk.CTkLabel(barra, text="Se guarda con fecha de hoy", font=PEQUENO,
-                     text_color=COLORES["texto2"]).pack(side="right", padx=20)
+        self.texto_rapido = ctk.CTkLabel(barra, text="Se guarda con fecha de hoy", font=PEQUENO,
+                                         text_color=COLORES["texto2"])
+        self.texto_rapido.pack(side="right", padx=20)
 
     def _guardar_rapido(self, categoria):
         monto = convertir_monto(self.monto_rapido.get())
@@ -303,7 +309,8 @@ class PanelDashboard(ctk.CTkScrollableFrame):
         cuentas = cuentas_dao.listar(self.usuario["id"], solo_activas=True)
         if not cuentas:
             return mostrar_aviso(self, "Primero crea una cuenta en Configuración", tipo="error")
-        transacciones_dao.crear(cuentas[0]["id"], categoria["id"], categoria["nombre"], monto, date.today(), "gasto")
+        cuenta = cuentas_dao.predeterminada(cuentas)  # la elegida en Configuración (o la primera)
+        transacciones_dao.crear(cuenta["id"], categoria["id"], categoria["nombre"], monto, date.today(), "gasto")
         self.monto_rapido.delete(0, "end")
         self.refrescar()
         mostrar_aviso(self, f"✓ {calculos.formato_moneda(monto)} en {categoria['nombre']}")
@@ -346,6 +353,10 @@ class PanelDashboard(ctk.CTkScrollableFrame):
                                            f"de tus ingresos ({dinero(max(balance, 0))})")
 
         self._alertas(uid, hoy)
+
+        cuenta = cuentas_dao.predeterminada(cuentas_dao.listar(uid, solo_activas=True))
+        self.texto_rapido.configure(text=f"Se guarda en {cuenta['nombre']}, con fecha de hoy" if cuenta else
+                                    "Primero crea una cuenta en Configuración")
 
         # Botones de gasto rápido con las categorías más usadas
         for hijo in self.botones_rapidos.winfo_children():
@@ -412,10 +423,11 @@ class PanelDashboard(ctk.CTkScrollableFrame):
             textos = ctk.CTkFrame(fila, fg_color="transparent")
             textos.pack(side="left", padx=12)
             ctk.CTkLabel(textos, text=t["descripcion"], font=NORMAL_NEGRITA, anchor="w", height=20).pack(anchor="w")
-            ctk.CTkLabel(textos, text=f"{t['categoria'] or 'Sin categoría'} · {t['cuenta']} · "
+            ctk.CTkLabel(textos, text=f"{'Transferencia' if t['tipo'] == 'transferencia' else t['categoria'] or 'Sin categoría'}"
+                                      f" · {calculos.texto_cuenta(t)} · "
                                       f"{t['fecha']:%d/%m/%Y}", font=PEQUENO, text_color=COLORES["texto2"],
                          anchor="w", height=18).pack(anchor="w")
-            es_gasto = t["tipo"] == "gasto"
-            ctk.CTkLabel(fila, text=calculos.formato_moneda(float(t["monto"]) * (-1 if es_gasto else 1), con_signo=True),
+            colores = {"gasto": GRAFICAS["gasto"], "ingreso": GRAFICAS["ingreso"], "transferencia": GRAFICAS["neutro"]}
+            ctk.CTkLabel(fila, text=calculos.texto_monto(t),
                          font=NORMAL_NEGRITA,
-                         text_color=GRAFICAS["gasto"] if es_gasto else GRAFICAS["ingreso"]).pack(side="right")
+                         text_color=colores[t["tipo"]]).pack(side="right")

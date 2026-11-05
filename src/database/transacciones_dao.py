@@ -1,14 +1,17 @@
 """Operaciones de transacciones (movimientos) y consultas para reportes.
 
 Recordatorio: el monto siempre se guarda en positivo; el campo "tipo"
-indica si es 'gasto' o 'ingreso'.
+indica si es 'gasto', 'ingreso' o 'transferencia'.
+Una transferencia saca dinero de cuenta_id y lo pone en cuenta_destino_id: cambia los
+saldos de esas cuentas, pero NO cuenta como gasto ni como ingreso en los totales.
 """
 from database.conexion import consultar, consultar_uno, ejecutar, ejecutar_varios
 
 _SQL_BASE = """
-    SELECT t.*, c.nombre AS cuenta, cat.nombre AS categoria, cat.icono, cat.color
+    SELECT t.*, c.nombre AS cuenta, d.nombre AS cuenta_destino, cat.nombre AS categoria, cat.icono, cat.color
     FROM transacciones t
     JOIN cuentas c ON c.id = t.cuenta_id
+    LEFT JOIN cuentas d ON d.id = t.cuenta_destino_id
     LEFT JOIN categorias cat ON cat.id = t.categoria_id
     WHERE c.usuario_id = %s
 """
@@ -19,8 +22,12 @@ _SQL_INSERTAR = """INSERT INTO transacciones (cuenta_id, categoria_id, descripci
 
 # ---------- Altas, cambios y bajas ----------
 
-def crear(cuenta_id, categoria_id, descripcion, monto, fecha, tipo, origen="manual"):
-    return ejecutar(_SQL_INSERTAR, (cuenta_id, categoria_id, descripcion, abs(monto), fecha, tipo, origen))
+def crear(cuenta_id, categoria_id, descripcion, monto, fecha, tipo, origen="manual", cuenta_destino_id=None):
+    """cuenta_destino_id solo se usa en las transferencias (a qué cuenta va el dinero)."""
+    return ejecutar(
+        """INSERT INTO transacciones (cuenta_id, cuenta_destino_id, categoria_id, descripcion, monto, fecha, tipo, origen)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+        (cuenta_id, cuenta_destino_id, categoria_id, descripcion, abs(monto), fecha, tipo, origen))
 
 
 def crear_varias(filas):
@@ -28,13 +35,14 @@ def crear_varias(filas):
     return ejecutar_varios(_SQL_INSERTAR, filas)
 
 
-def actualizar(transaccion_id, usuario_id, cuenta_id, categoria_id, descripcion, monto, fecha, tipo):
+def actualizar(transaccion_id, usuario_id, cuenta_id, categoria_id, descripcion, monto, fecha, tipo,
+               cuenta_destino_id=None):
     ejecutar(
         """UPDATE transacciones t JOIN cuentas c ON c.id = t.cuenta_id
-           SET t.cuenta_id = %s, t.categoria_id = %s, t.descripcion = %s,
+           SET t.cuenta_id = %s, t.cuenta_destino_id = %s, t.categoria_id = %s, t.descripcion = %s,
                t.monto = %s, t.fecha = %s, t.tipo = %s
            WHERE t.id = %s AND c.usuario_id = %s""",
-        (cuenta_id, categoria_id, descripcion, abs(monto), fecha, tipo, transaccion_id, usuario_id),
+        (cuenta_id, cuenta_destino_id, categoria_id, descripcion, abs(monto), fecha, tipo, transaccion_id, usuario_id),
     )
 
 
@@ -61,9 +69,9 @@ def buscar(usuario_id, desde=None, hasta=None, categoria_id=None, cuenta_id=None
     if categoria_id:
         sql += " AND t.categoria_id = %s"
         parametros.append(categoria_id)
-    if cuenta_id:
-        sql += " AND t.cuenta_id = %s"
-        parametros.append(cuenta_id)
+    if cuenta_id:  # en esa cuenta, o una transferencia que llega a ella
+        sql += " AND (t.cuenta_id = %s OR t.cuenta_destino_id = %s)"
+        parametros += [cuenta_id, cuenta_id]
     if tipo:
         sql += " AND t.tipo = %s"
         parametros.append(tipo)

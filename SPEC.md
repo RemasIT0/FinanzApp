@@ -56,6 +56,10 @@ Todos los colores están en `src/utils/temas.py`.
 | No se usa `cryptography` | `keyring` ya guarda la contraseña cifrada por Windows |
 | Recuperar contraseña con código de 6 dígitos por correo (tabla `recuperaciones`) | El código se guarda con bcrypt, vence en 15 min, máximo 5 intentos y 1 envío por minuto. Se envía desde un Gmail de la app (SMTP), cuya contraseña de aplicación va en el llavero |
 | Adaptada a **Argentina** | Montos `$ 1.250,50`; se pueden escribir `1250,50`, `1.250,50` o `1250.50` (`calculos.leer_monto`, una sola función para toda la app). Bancos argentinos en importar y correo, comercios argentinos para las categorías, calendario `es_AR`, CSV exportado con `;` y coma decimal para el Excel argentino. Las plantillas de correo con los patrones viejos (México) se actualizan solas |
+| Transferencias entre cuentas (`transacciones.cuenta_destino_id`) | Un solo movimiento tipo `transferencia`: resta en la cuenta de origen y suma en la de destino. No entra en los totales de gastos/ingresos |
+| Cuenta predeterminada (tabla `preferencias`) | Antes el gasto rápido usaba la primera cuenta por orden alfabético |
+| Migraciones simples en `conexion.py` (`MIGRACIONES`) | `CREATE TABLE IF NOT EXISTS` no agrega columnas a tablas que ya existen; así las bases de datos viejas se actualizan solas |
+| El asistente es un muñequito flotante (dibujado con Pillow en `utils/mascota.py`) | En escritorio vive en una ventanita sin bordes con color transparente (Tkinter no permite imágenes con fondo transparente dentro de la ventana) |
 | Asistente con respuestas programadas (palabras clave), no con IA | Funciona sin internet, sin costo y responde al instante; lee datos reales del usuario (gastos, saldos, presupuestos). La lógica está en `utils/asistente.py`, separada de la interfaz |
 | Tutorial de bienvenida (tabla `tutoriales_vistos`) | Se muestra la primera vez; se repite desde el asistente. Si se cierra sesión a mitad, vuelve a salir la próxima vez |
 | La sincronización de correo avisa los correos del banco cuyo asunto no coincidió | Antes se descartaban en silencio y parecía que la app no funcionaba |

@@ -9,17 +9,17 @@ from matplotlib.figure import Figure
 
 from database import categorias_dao, cuentas_dao, presupuestos_dao, transacciones_dao
 from database.conexion import consultar
-from utils.calculos import formato_moneda
+from utils.calculos import formato_moneda, monto_con_signo, texto_cuenta
 
 
 def _tabla(transacciones):
     return pd.DataFrame([{
         "Fecha": t["fecha"].strftime("%d/%m/%Y"),
         "Descripción": t["descripcion"],
-        "Categoría": t["categoria"] or "Sin categoría",
-        "Cuenta": t["cuenta"],
+        "Categoría": "Transferencia" if t["tipo"] == "transferencia" else t["categoria"] or "Sin categoría",
+        "Cuenta": texto_cuenta(t),
         "Tipo": t["tipo"].capitalize(),
-        "Monto": float(t["monto"]) * (-1 if t["tipo"] == "gasto" else 1),
+        "Monto": monto_con_signo(t),
     } for t in transacciones])
 
 
@@ -93,10 +93,17 @@ def importar_respaldo(usuario_id, ruta):
     for c in datos.get("categorias", []):
         nuevas_categorias[c["id"]] = categorias_dao.crear(usuario_id, c["nombre"], c["icono"],
                                                           c["color"], bool(c["es_ingreso"]))
+    movimientos = [t for t in datos.get("transacciones", []) if t["cuenta_id"] in nuevas_cuentas]
     filas = [(nuevas_cuentas[t["cuenta_id"]], nuevas_categorias.get(t["categoria_id"]), t["descripcion"],
               t["monto"], t["fecha"], t["tipo"], t["origen"])
-             for t in datos.get("transacciones", []) if t["cuenta_id"] in nuevas_cuentas]
+             for t in movimientos if t["tipo"] != "transferencia"]
     transacciones_dao.crear_varias(filas)
+    # Las transferencias llevan además la cuenta de destino (con su id nuevo)
+    for t in movimientos:
+        if t["tipo"] == "transferencia" and t.get("cuenta_destino_id") in nuevas_cuentas:
+            transacciones_dao.crear(nuevas_cuentas[t["cuenta_id"]], None, t["descripcion"], t["monto"], t["fecha"],
+                                    "transferencia", t["origen"], cuenta_destino_id=nuevas_cuentas[t["cuenta_destino_id"]])
+            filas.append(t)
     for p in datos.get("presupuestos", []):
         if p["categoria_id"] in nuevas_categorias:
             presupuestos_dao.guardar(usuario_id, nuevas_categorias[p["categoria_id"]],

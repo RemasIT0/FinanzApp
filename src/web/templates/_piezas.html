@@ -7,7 +7,7 @@
     <span class="descripcion" style="display:block">{{ m.descripcion }}</span>
     <span class="detalle" style="display:block">{{ m.categoria }} · {{ m.cuenta }} · {{ m.fecha.strftime('%d/%m/%Y') }}</span>
   </span>
-  <span class="monto {{ m.tipo }}">{{ m.con_signo | dinero_signo }}</span>
+  <span class="monto {{ m.tipo }}">{{ m.texto_monto }}</span>
 </a>
 {% endmacro %}
 

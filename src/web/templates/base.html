@@ -11,6 +11,9 @@
   <meta name="apple-mobile-web-app-title" content="FinanzApp">
   <title>{% block titulo %}FinanzApp{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='estilo.css') }}">
+  <!-- El muñequito como ícono de la pestaña y de "Agregar a pantalla de inicio" -->
+  <link rel="icon" type="image/png" href="/mascota.png">
+  <link rel="apple-touch-icon" href="/mascota.png">
 </head>
 <body>
   {% block cuerpo %}
@@ -25,6 +28,28 @@
     <a href="/reportes" class="{{ 'activo' if seccion == 'reportes' }}"><span class="icono">◔</span>Reportes</a>
     <a href="/salir"><span class="icono">⇠</span>Salir</a>
   </nav>
+
+  {# El muñequito del asistente y su chat (la lógica está en static/asistente.js) #}
+  <button class="mascota" id="mascota" type="button" aria-label="Abrir asistente" aria-expanded="false"
+          aria-controls="chat">
+    <img src="/mascota.png" alt="" width="58" height="64">
+  </button>
+  <div class="globo" id="globo" hidden>¿Te ayudo? 👋</div>
+  <section class="chat" id="chat" hidden aria-label="Asistente">
+    <header class="chat-cabecera">
+      <img src="/mascota.png" alt="" width="36" height="40">
+      <div class="chat-titulo"><b>Asistente</b><span>Tu dinero y la app, rápido</span></div>
+      <button type="button" class="chat-boton" id="chat-limpiar">🗑 Limpiar</button>
+      <button type="button" class="chat-boton" id="chat-cerrar" aria-label="Cerrar">✕</button>
+    </header>
+    <div class="chat-mensajes" id="chat-mensajes" aria-live="polite"></div>
+    <div class="chat-atajos" id="chat-atajos"></div>
+    <form class="chat-escribir" id="chat-form">
+      <input id="chat-texto" autocomplete="off" placeholder="Escribe tu pregunta…" aria-label="Tu pregunta">
+      <button class="boton" aria-label="Enviar">➤</button>
+    </form>
+  </section>
+  <script src="{{ url_for('static', path='asistente.js') }}" defer></script>
   {% endblock %}
 
   {% if aviso %}<div class="aviso {{ aviso[1] }}" role="status">{{ aviso[0] }}</div>{% endif %}

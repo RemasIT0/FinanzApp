@@ -2,7 +2,7 @@
 import customtkinter as ctk
 from tkinter import ttk
 
-from utils.calculos import formato_moneda
+from utils.calculos import texto_categoria, texto_cuenta, texto_monto
 from utils.temas import COLORES, color
 
 
@@ -76,11 +76,9 @@ class TablaTransacciones(ctk.CTkFrame):
         self._datos = {str(t["id"]): t for t in transacciones}
         self.tabla.delete(*self.tabla.get_children())
         for i, t in enumerate(transacciones):
-            monto = float(t["monto"]) * (-1 if t["tipo"] == "gasto" else 1)
-            categoria = f"{t['icono']}  {t['categoria']}" if t["categoria"] else "Sin categoría"
             self.tabla.insert("", "end", iid=str(t["id"]), tags=("par" if i % 2 == 0 else "impar",), values=(
-                t["fecha"].strftime("%d/%m/%Y"), t["descripcion"], categoria, t["cuenta"],
-                formato_moneda(monto, con_signo=True)))
+                t["fecha"].strftime("%d/%m/%Y"), t["descripcion"], texto_categoria(t), texto_cuenta(t),
+                texto_monto(t)))
 
     def seleccionada(self):
         """Devuelve el movimiento seleccionado (dict) o None."""

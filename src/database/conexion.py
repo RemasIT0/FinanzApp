@@ -36,8 +36,28 @@ def inicializar_bd():
         cursor = conexion.cursor()
         for sentencia in sentencias:
             cursor.execute(sentencia)
+        _migrar(cursor)
     finally:
         conexion.close()
+
+
+# Columnas que se agregaron después de la primera versión. "CREATE TABLE IF NOT EXISTS" no
+# toca una tabla que ya existe, así que si a tu base de datos le falta la columna, se agrega aquí.
+# (tabla, columna, cómo agregarla)
+MIGRACIONES = [
+    ("transacciones", "cuenta_destino_id",
+     "ALTER TABLE transacciones ADD COLUMN cuenta_destino_id INT NULL AFTER cuenta_id, "
+     "ADD FOREIGN KEY (cuenta_destino_id) REFERENCES cuentas(id) ON DELETE CASCADE"),
+]
+
+
+def _migrar(cursor):
+    for tabla, columna, sql in MIGRACIONES:
+        cursor.execute("""SELECT COUNT(*) FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s""",
+                       (NOMBRE_BD, tabla, columna))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(sql)
 
 
 def consultar(sql, parametros=()):
