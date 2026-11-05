@@ -11,14 +11,14 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import categorias_dao, cuentas_dao, presupuestos_dao, transacciones_dao, usuarios_dao
-from utils import asistente, calculos, mascota, recuperacion
+from utils import asistente, calculos, recuperacion
 from utils.config import cargar_config
 from utils.validadores import convertir_monto, email_valido, password_valida, texto_requerido
 
@@ -428,7 +428,7 @@ def movimiento_eliminar(request: Request, transaccion_id: int):
     return ir("/historial")
 
 
-# ---------- Asistente (el muñequito) ----------
+# ---------- Asistente (el botón "?") ----------
 
 # Secciones que existen en la web. Las otras (importar, correo, configuración) son solo de escritorio.
 _URLS_WEB = {"inicio": "/", "historial": "/historial", "reportes": "/reportes"}
@@ -453,12 +453,6 @@ def respuesta_web(respuesta):
         texto += "\n\n(Esto se hace en la app de la computadora.)"
     sugerencias = [s for s in respuesta["sugerencias"] if "tutorial" not in s.lower()]
     return {"texto": texto, "acciones": acciones, "sugerencias": sugerencias}
-
-
-@app.get("/mascota.png")
-def imagen_mascota():
-    # Se dibuja una vez y queda en memoria; el navegador la guarda un día
-    return Response(mascota.png(192), media_type="image/png", headers={"Cache-Control": "max-age=86400"})
 
 
 @app.get("/asistente/bienvenida")

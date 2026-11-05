@@ -9,7 +9,7 @@ from ui.componentes.aviso import mostrar_aviso
 from ui.componentes.boton_personalizado import Boton, BotonMenu, hover_suave
 from ui.componentes.tarjeta_resumen import Tarjeta, TarjetaResumen, tono_suave
 from ui.tutorial import Tutorial
-from ui.ventana_asistente import ESPACIO_MASCOTA, MascotaFlotante, PanelAsistente
+from ui.ventana_asistente import ESPACIO_BOTON, BotonAyuda, PanelAsistente
 from ui.ventana_config import PanelConfig
 from ui.ventana_correo import PanelCorreo
 from ui.ventana_importar import PanelImportar
@@ -54,14 +54,12 @@ class VentanaPrincipal(ctk.CTkFrame):
 
         self.asistente = None   # el panel del chat se crea la primera vez que se abre
         self.tutorial = None
-        # El muñequito del asistente, flotando abajo a la derecha
-        self.mascota = MascotaFlotante(self, al_tocar=self.alternar_asistente)
-        # Los avisos flotantes se corren a la izquierda para no tapar al muñeco
-        self.winfo_toplevel().margen_aviso = ESPACIO_MASCOTA
+        # Botón "?" del asistente, abajo a la derecha
+        self.boton_ayuda = BotonAyuda(self, al_tocar=self.alternar_asistente)
+        # Los avisos flotantes se corren a la izquierda para no tapar el botón
+        self.winfo_toplevel().margen_aviso = ESPACIO_BOTON
         if not usuarios_dao.vio_tutorial(usuario["id"]):
             self.after(700, self.iniciar_tutorial)  # primera vez: guía de bienvenida
-        else:
-            self.after(900, lambda: self.mascota.decir("¿Te ayudo? 👋"))
 
     def _barra_lateral(self):
         barra = self.barra = ctk.CTkFrame(self, width=240, corner_radius=0, fg_color=COLORES["fondo2"])
@@ -175,15 +173,12 @@ class VentanaPrincipal(ctk.CTkFrame):
             self.after_cancel(self._id_correo)
         if getattr(self, "tutorial", None) is not None:
             self.tutorial.cancelar()  # cerró sesión a mitad del tutorial: se verá la próxima vez
-        self.winfo_toplevel().margen_aviso = 0  # en el login no hay muñeco
-        if getattr(self, "mascota", None) is not None:
-            self.mascota.destruir()
+        self.winfo_toplevel().margen_aviso = 0  # en el login no hay botón de ayuda
         super().destroy()
 
     # ---------- Asistente y tutorial ----------
 
     def alternar_asistente(self):
-        self.mascota.callar()
         if self.asistente is None:
             self.asistente = PanelAsistente(self, self.usuario, al_accion=self._accion_asistente)
         self.asistente.alternar()
@@ -207,8 +202,7 @@ class VentanaPrincipal(ctk.CTkFrame):
     def _fin_tutorial(self):
         self.tutorial = None
         self.mostrar("inicio")
-        self.mascota.saltar()
-        self.mascota.decir("¿Dudas? ¡Tocame! 👋")
+        mostrar_aviso(self, "¿Dudas? Toca el botón ? de abajo a la derecha", tipo="info", duracion=3500)
 
     def nuevo_movimiento(self):
         VentanaRegistro(self, self.usuario, al_guardar=self._movimiento_guardado)

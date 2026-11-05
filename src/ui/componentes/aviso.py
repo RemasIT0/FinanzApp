@@ -9,7 +9,7 @@ def mostrar_aviso(ventana, texto, tipo="ok", duracion=2500):
     fondo = {"ok": "#2e9c7c", "error": COLORES["destacado"], "info": "#3498db"}[tipo]
     aviso = ctk.CTkLabel(ventana.winfo_toplevel(), text=f"  {texto}  ", font=NORMAL_NEGRITA,
                          fg_color=fondo, text_color="#ffffff", corner_radius=12, height=44)
-    # Si la ventana tiene el muñequito del asistente abajo a la derecha, el aviso se corre a su izquierda
+    # Si la ventana tiene el botón "?" del asistente abajo a la derecha, el aviso se corre a su izquierda
     margen = getattr(ventana.winfo_toplevel(), "margen_aviso", 0)
     lugar = dict(relx=1.0, rely=1.0, anchor="se", x=-(24 + margen))
 

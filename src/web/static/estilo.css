@@ -310,37 +310,32 @@ input:focus, select:focus { border-color: var(--destacado); }
   .aviso { animation: none; }
 }
 
-/* ---------- Asistente: muñequito flotante y chat ---------- */
-.mascota {
+/* ---------- Asistente: botón "?" y chat ---------- */
+.ayuda {
   position: fixed;
-  right: max(14px, env(safe-area-inset-right, 0px));
-  bottom: calc(78px + env(safe-area-inset-bottom));   /* encima de la barra de navegación */
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(80px + env(safe-area-inset-bottom));   /* encima de la barra de navegación */
   z-index: 15;
-  border: 0; padding: 0; background: none; cursor: pointer;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .35));
-  animation: flotar 2.4s ease-in-out infinite;
-  -webkit-tap-highlight-color: transparent;
+  width: 52px; height: 52px;
+  border: 0; border-radius: 50%;
+  background: var(--destacado); color: #fff;
+  font: 700 26px/1 "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+  cursor: pointer;
 }
-.mascota img { display: block; width: 58px; height: auto; }
-.mascota:focus-visible { outline: 3px solid var(--destacado); outline-offset: 4px; border-radius: 50%; }
-@keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-
-.globo {
-  position: fixed;
-  right: calc(max(14px, env(safe-area-inset-right, 0px)) + 66px);
-  bottom: calc(100px + env(safe-area-inset-bottom));
-  z-index: 15;
-  background: var(--fondo2); color: var(--texto);
-  border: 1px solid var(--borde); border-radius: 14px 14px 4px 14px;
-  padding: 8px 12px; font-weight: 600; font-size: 14px;
-  box-shadow: var(--sombra); cursor: pointer;
+.ayuda:active { background: var(--destacado-hover); }
+.ayuda:focus-visible { outline: 3px solid var(--texto); outline-offset: 3px; }
+.chat-icono {
+  width: 36px; height: 36px; flex: 0 0 36px;
+  display: grid; place-items: center;
+  border-radius: 50%; background: var(--destacado); color: #fff; font-weight: 700; font-size: 18px;
 }
 
 .chat {
   position: fixed;
   right: max(12px, env(safe-area-inset-right, 0px));
   left: max(12px, env(safe-area-inset-left, 0px));
-  bottom: calc(150px + env(safe-area-inset-bottom));  /* encima del muñeco */
+  bottom: calc(142px + env(safe-area-inset-bottom));  /* encima del botón ? */
   z-index: 16;
   height: min(62vh, 520px);
   display: flex; flex-direction: column;
@@ -354,7 +349,6 @@ input:focus, select:focus { border-color: var(--destacado); }
 @media (min-width: 520px) { .chat { left: auto; width: 380px; } }
 
 .chat-cabecera { display: flex; align-items: center; gap: 10px; padding: 10px 10px 8px 14px; border-bottom: 1px solid var(--borde); }
-.chat-cabecera img { width: 36px; height: auto; }
 .chat-titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
 .chat-titulo span { font-size: 12px; color: var(--texto2); }
 .chat-boton {
@@ -390,4 +384,3 @@ input:focus, select:focus { border-color: var(--destacado); }
 .chat-escribir input { min-height: 44px; }
 .chat-escribir .boton { width: 48px; flex: 0 0 48px; margin: 0; padding: 0; }
 
-@media (prefers-reduced-motion: reduce) { .mascota { animation: none; } }

@@ -18,7 +18,7 @@ ANCHO_TARJETA = 380
 PASOS = [
     {"titulo": "¡Bienvenido a FinanzApp! 👋",
      "texto": "Te muestro en un minuto cómo funciona. Puedes saltarlo y volver a verlo cuando quieras "
-              "pidiéndoselo al asistente (el muñequito de abajo a la derecha)."},
+              "pidiéndoselo al asistente (el botón ? de abajo a la derecha)."},
     {"seccion": "inicio", "objetivo": "inicio", "titulo": "Inicio",
      "texto": "Tu resumen del mes: ingresos, gastos, balance y ahorro, con gráficas y tus últimos movimientos.\n\n"
               "Usa «⚡ Gasto rápido»: escribe un monto y toca una categoría."},
@@ -36,8 +36,8 @@ PASOS = [
     {"seccion": "config", "objetivo": "config", "titulo": "Configuración",
      "texto": "Crea tus cuentas (banco, tarjetas, efectivo), categorías y presupuestos. "
               "En «Datos» configuras el correo para recuperar tu contraseña."},
-    {"seccion": "inicio", "objetivo": "mascota", "titulo": "Tu asistente",
-     "texto": "Este muñequito es tu asistente. Tocalo y pregúntale cuánto gastaste, tus saldos o cómo hacer algo. "
+    {"seccion": "inicio", "objetivo": "ayuda", "titulo": "Tu asistente",
+     "texto": "Este botón abre el asistente. Tocalo y pregúntale cuánto gastaste, tus saldos o cómo hacer algo. "
               "Escríbele «tutorial» para ver esta guía otra vez."},
 ]
 
@@ -77,7 +77,8 @@ class Tutorial:
             self.tarjeta.destroy()
         self.tarjeta = self._construir_tarjeta(paso)
         # Se espera un instante a que la sección termine de acomodarse para medir posiciones
-        self.ventana.after(80, lambda: self._colocar(paso))
+        indice = self.indice
+        self.ventana.after(80, lambda: self._colocar(paso, indice))
 
     def _construir_tarjeta(self, paso):
         tarjeta = ctk.CTkFrame(self.ventana, width=ANCHO_TARJETA, corner_radius=16, fg_color=COLORES["fondo2"],
@@ -108,7 +109,12 @@ class Tutorial:
             Boton(botones, "Saltar", estilo="fantasma", width=70, height=36, command=self.terminar).pack(side="left")
         return tarjeta
 
-    def _colocar(self, paso):
+    def _colocar(self, paso, indice):
+        # Si el usuario avanzó rápido, este dibujo es de un paso viejo: se ignora
+        # (si no, quedarían botones resaltados y la tarjeta en el lugar equivocado)
+        if indice != self.indice or self.tarjeta is None or not self.tarjeta.winfo_exists():
+            return
+        self._quitar_resaltado()
         if self.tarjeta is None or not self.tarjeta.winfo_exists():
             return
         v = self.ventana
@@ -116,16 +122,16 @@ class Tutorial:
         v.update_idletasks()
         alto_ventana = v.winfo_height() / escala
         alto_tarjeta = self.tarjeta.winfo_reqheight() / escala
-        if paso.get("objetivo") == "mascota":
-            # El muñeco está abajo a la derecha: la tarjeta va a su izquierda y él da un saltito
-            mascota = v.mascota
-            ancho_mascota = mascota.ancho
+        if paso.get("objetivo") == "ayuda":
+            # El botón "?" está abajo a la derecha: la tarjeta va a su izquierda y el botón se resalta
+            boton = v.boton_ayuda
+            boton.configure(border_width=3, border_color=COLORES["texto"])
+            self.resaltado = boton
             self.flecha.configure(text="▶")
-            self.flecha.place(relx=1, rely=1, x=-(ancho_mascota + 24), y=-46, anchor="e")
-            self.tarjeta.place(relx=1, rely=1, x=-(ancho_mascota + 50), y=-16, anchor="se")
+            self.flecha.place(relx=1, rely=1, x=-(boton.ancho + 26), y=-48, anchor="e")
+            self.tarjeta.place(relx=1, rely=1, x=-(boton.ancho + 52), y=-16, anchor="se")
             self.flecha.lift()
             self.tarjeta.lift()
-            mascota.saltar()
             return
         self.flecha.configure(text="◀")
         objetivo = self._widget(paso.get("objetivo")) if paso.get("objetivo") else None

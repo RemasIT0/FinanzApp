@@ -1,11 +1,11 @@
-// Asistente de la versión web: el muñequito flotante y su chat.
+// Asistente de la versión web: el botón "?" y su chat.
 // Las respuestas las arma el servidor (/asistente), con el mismo "cerebro" que la app de escritorio.
 // La conversación se guarda en sessionStorage para que no se pierda al cambiar de pantalla.
 (function () {
   const $ = (id) => document.getElementById(id);
-  const mascota = $("mascota"), chat = $("chat"), mensajes = $("chat-mensajes"), atajos = $("chat-atajos");
-  const form = $("chat-form"), texto = $("chat-texto"), globo = $("globo");
-  if (!mascota) return;
+  const boton = $("ayuda"), chat = $("chat"), mensajes = $("chat-mensajes"), atajos = $("chat-atajos");
+  const form = $("chat-form"), texto = $("chat-texto");
+  if (!boton) return;
 
   const CLAVE = "finanzapp-chat";
   let historial = leer();
@@ -86,18 +86,16 @@
 
   // ---------- Abrir / cerrar / limpiar ----------
   function abrir() {
-    globo.hidden = true;
     chat.hidden = false;
-    mascota.setAttribute("aria-expanded", "true");
+    boton.setAttribute("aria-expanded", "true");
     if (!historial.length) saludar(); else dibujarTodo();
     setTimeout(() => texto.focus(), 50);
   }
   function cerrar() {
     chat.hidden = true;
-    mascota.setAttribute("aria-expanded", "false");
+    boton.setAttribute("aria-expanded", "false");
   }
-  mascota.addEventListener("click", () => (chat.hidden ? abrir() : cerrar()));
-  globo.addEventListener("click", abrir);
+  boton.addEventListener("click", () => (chat.hidden ? abrir() : cerrar()));
   $("chat-cerrar").addEventListener("click", cerrar);
   $("chat-limpiar").addEventListener("click", () => {
     historial = [];
@@ -114,12 +112,4 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !chat.hidden) cerrar(); });
 
-  // Saludo del globito: una vez por visita
-  try {
-    if (!sessionStorage.getItem("finanzapp-saludo")) {
-      sessionStorage.setItem("finanzapp-saludo", "1");
-      setTimeout(() => { globo.hidden = false; }, 900);
-      setTimeout(() => { globo.hidden = true; }, 5400);
-    }
-  } catch (e) { /* sin almacenamiento: no se saluda */ }
 })();

@@ -59,7 +59,7 @@ Todos los colores están en `src/utils/temas.py`.
 | Transferencias entre cuentas (`transacciones.cuenta_destino_id`) | Un solo movimiento tipo `transferencia`: resta en la cuenta de origen y suma en la de destino. No entra en los totales de gastos/ingresos |
 | Cuenta predeterminada (tabla `preferencias`) | Antes el gasto rápido usaba la primera cuenta por orden alfabético |
 | Migraciones simples en `conexion.py` (`MIGRACIONES`) | `CREATE TABLE IF NOT EXISTS` no agrega columnas a tablas que ya existen; así las bases de datos viejas se actualizan solas |
-| El asistente es un muñequito flotante (dibujado con Pillow en `utils/mascota.py`) | En escritorio vive en una ventanita sin bordes con color transparente (Tkinter no permite imágenes con fondo transparente dentro de la ventana) |
+| El asistente se abre con un botón redondo **?** fijo abajo a la derecha | Simple y siempre visible (se probó un muñequito animado, pero no se veía bien en todas las pantallas) |
 | Asistente con respuestas programadas (palabras clave), no con IA | Funciona sin internet, sin costo y responde al instante; lee datos reales del usuario (gastos, saldos, presupuestos). La lógica está en `utils/asistente.py`, separada de la interfaz |
 | Tutorial de bienvenida (tabla `tutoriales_vistos`) | Se muestra la primera vez; se repite desde el asistente. Si se cierra sesión a mitad, vuelve a salir la próxima vez |
 | La sincronización de correo avisa los correos del banco cuyo asunto no coincidió | Antes se descartaban en silencio y parecía que la app no funcionaba |
