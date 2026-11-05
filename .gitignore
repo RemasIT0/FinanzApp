@@ -1,7 +1,33 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
+# ---------- Datos privados (NUNCA subir) ----------
+# Contraseña de MySQL, correo de envío y clave de sesiones de la web
 data/config.json
+# Respaldos y exportaciones: tienen tus movimientos reales
 exports/*
 !exports/.gitkeep
+respaldo_finanzapp_*.json
+movimientos_*.csv
+movimientos_*.pdf
+# Archivos de entorno con claves (por si se usan en el futuro)
+.env
+.env.*
+*.key
+*.pem
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# ---------- Editores ----------
+.vscode/
+.idea/
+
+# ---------- Sistema ----------
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
